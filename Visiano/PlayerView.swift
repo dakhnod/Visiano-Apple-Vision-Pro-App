@@ -14,13 +14,34 @@ struct PlayerView: View {
     @State private var enlarge = false
     @State private var showPicker = false
     @State var buttonVisible = true
+    @State private var displayLink: CADisplayLink?
+    @State private var speed = 1.0
+    @State private var progress = 0.0
     
+    @State private var playing = false
+    	
     let WHITE_KEY_WIDTH = 0.0235 as Float
     let BLACK_KEY_WIDTH = 0.01 as Float
     
     var noteList: [Note]
     
     var noteView = Entity()
+    
+    init(noteList: [Note]) {
+        self.noteList = noteList
+    }
+    
+    class AnimationController {
+        var callback: (_ displayLink: CADisplayLink) -> Void
+        
+        init(callback: @escaping (_ displayLink: CADisplayLink) -> Void) {
+            self.callback = callback
+        }
+        
+        @objc func animationCallback(displayLink: CADisplayLink) {
+            callback(displayLink)
+        }
+    }
     
     func generateNote(note: Note) -> Entity {
         let lengthFactor = Float(10000)
@@ -45,7 +66,7 @@ struct PlayerView: View {
         }
         
         return bar
-    }
+    }		
     
     @MainActor func generateBlackKey(xOffset: Float) -> Entity{
         let mesh = MeshResource.generateBox(size: SIMD3(BLACK_KEY_WIDTH, 0.00, 0.06))
@@ -62,7 +83,7 @@ struct PlayerView: View {
     
     @MainActor func generateWhiteKey(index: Int) -> Entity {
         let mesh = MeshResource.generateBox(size: SIMD3(0.004, 0.00, 0.15))
-        let material = SimpleMaterial(color: .black, isMetallic: false)
+        let material = SimpleMaterial(color: .black, isMetallic: false)	
         let divider = ModelEntity(mesh: mesh, materials: [material])
         divider.position.x = Float(index) * WHITE_KEY_WIDTH
         return divider
@@ -110,9 +131,22 @@ struct PlayerView: View {
             for note in noteList {
                 noteView.addChild(generateNote(note: note))
             }
-            
+            	
             content.add(anchor)
             
+            let controller = AnimationController { displayLink in
+                guard playing else { return }
+                    
+                let delta = displayLink.targetTimestamp - displayLink.timestamp
+                
+                progress += delta * 0.01 * speed
+                
+                noteView.transform.translation.y = Float(progress) * -5.5
+            }
+            
+            displayLink = CADisplayLink(target: controller, selector: #selector(controller.animationCallback))
+            
+            displayLink?.add(to: .main, forMode: .default)
         } update: { content in
             // Update the RealityKit content when SwiftUI state changes
             /*
@@ -127,58 +161,34 @@ struct PlayerView: View {
         })
         .toolbar {
             ToolbarItemGroup(placement: .bottomOrnament) {
-                if buttonVisible {
-                    HStack (spacing: 12) {
-                        Button("Play") {
-                            Task {
-                                noteView.move(
-                                    to: Transform(
-                                        translation: [0, -6, 0]
-                                    ),
-                                    relativeTo: noteView,
-                                    duration: 100
-                                )
-                            }
-                            buttonVisible = false
-                        }
-                    }
-                }
             }
         }
+        
         /*
         .toolbar {
-            ToolbarItemGroup(placement: .bottomOrnament) {
-                VStack (spacing: 12) {
-                    Button {
-                        enlarge.toggle()
-                    } label: {
-                        Text(enlarge ? "Reduce RealityView Content" : "Enlarge RealityView Content")
+            ToolbarItemGroup(placement: .principal) {
+                HStack (spacing: 12) {
+                    Button(playing ? "Pause" : "Play") {
+                        playing = !playing
                     }
-                    .animation(.none, value: 0)
-                    .fontWeight(.semibold)
-
-                    ToggleImmersiveSpaceButton()
                 }
             }
         }
          */
         
-        /*
-        .ornament(attachmentAnchor: .scene(.leading)) {
-            VStack (spacing: 12) {
-                Button("Pick MIDI File") {
-                    showPicker = true
+        .ornament(attachmentAnchor: .scene(.top)) {
+            HStack (spacing: 12) {
+                Button(playing ? "Pause" : "Play") {
+                    playing = !playing
                 }
-                .sheet(isPresented: $showPicker) {
-                    DocumentPicker { urls in
-                        if let midiURL = urls.first {
-                            // parseMIDIFile(url: midiURL)
-                        }
-                    }
-                }
+                
+                Slider(value: $speed, in: 0...3, step: 0.01)
+                    .padding()
+                
+                Slider(value: $progress, in: 0...1, step: 0.01)
+                    .padding()
             }
         }
-         */
          
     }
 }
