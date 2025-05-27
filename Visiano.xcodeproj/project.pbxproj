@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D72B21EE2DE5031B00B0CF55 /* MIDIKit in Frameworks */ = {isa = PBXBuildFile; productRef = D72B21ED2DE5031B00B0CF55 /* MIDIKit */; };
+		D72B21F02DE5031B00B0CF55 /* MIDIKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = D72B21EF2DE5031B00B0CF55 /* MIDIKitCore */; };
+		D72B21F22DE5031B00B0CF55 /* MIDIKitSMF in Frameworks */ = {isa = PBXBuildFile; productRef = D72B21F12DE5031B00B0CF55 /* MIDIKitSMF */; };
 		D7A7ED2E2DE3954400B71F30 /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = D7A7ED2D2DE3954400B71F30 /* RealityKitContent */; };
 /* End PBXBuildFile section */
 
@@ -57,7 +60,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D72B21F02DE5031B00B0CF55 /* MIDIKitCore in Frameworks */,
+				D72B21EE2DE5031B00B0CF55 /* MIDIKit in Frameworks */,
 				D7A7ED2E2DE3954400B71F30 /* RealityKitContent in Frameworks */,
+				D72B21F22DE5031B00B0CF55 /* MIDIKitSMF in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +125,9 @@
 			name = Visiano;
 			packageProductDependencies = (
 				D7A7ED2D2DE3954400B71F30 /* RealityKitContent */,
+				D72B21ED2DE5031B00B0CF55 /* MIDIKit */,
+				D72B21EF2DE5031B00B0CF55 /* MIDIKitCore */,
+				D72B21F12DE5031B00B0CF55 /* MIDIKitSMF */,
 			);
 			productName = Visiano;
 			productReference = D7A7ED282DE3954400B71F30 /* Visiano.app */;
@@ -175,6 +184,10 @@
 			);
 			mainGroup = D7A7ED1F2DE3954400B71F30;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D72B21EB2DE501FE00B0CF55 /* XCLocalSwiftPackageReference "../../Downloads/MidiParser" */,
+				D72B21EC2DE5031B00B0CF55 /* XCRemoteSwiftPackageReference "MIDIKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D7A7ED292DE3954400B71F30 /* Products */;
 			projectDirPath = "";
@@ -468,7 +481,40 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		D72B21EB2DE501FE00B0CF55 /* XCLocalSwiftPackageReference "../../Downloads/MidiParser" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Downloads/MidiParser;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D72B21EC2DE5031B00B0CF55 /* XCRemoteSwiftPackageReference "MIDIKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/orchetect/MIDIKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.10.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		D72B21ED2DE5031B00B0CF55 /* MIDIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D72B21EC2DE5031B00B0CF55 /* XCRemoteSwiftPackageReference "MIDIKit" */;
+			productName = MIDIKit;
+		};
+		D72B21EF2DE5031B00B0CF55 /* MIDIKitCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D72B21EC2DE5031B00B0CF55 /* XCRemoteSwiftPackageReference "MIDIKit" */;
+			productName = MIDIKitCore;
+		};
+		D72B21F12DE5031B00B0CF55 /* MIDIKitSMF */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D72B21EC2DE5031B00B0CF55 /* XCRemoteSwiftPackageReference "MIDIKit" */;
+			productName = MIDIKitSMF;
+		};
 		D7A7ED2D2DE3954400B71F30 /* RealityKitContent */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RealityKitContent;
