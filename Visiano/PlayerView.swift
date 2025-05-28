@@ -135,13 +135,13 @@ struct PlayerView: View {
             content.add(anchor)
             
             let controller = AnimationController { displayLink in
+                noteView.transform.translation.y = Float(progress) * -5.5
+                
                 guard playing else { return }
                     
                 let delta = displayLink.targetTimestamp - displayLink.timestamp
                 
                 progress += delta * 0.01 * speed
-                
-                noteView.transform.translation.y = Float(progress) * -5.5
             }
             
             displayLink = CADisplayLink(target: controller, selector: #selector(controller.animationCallback))
@@ -176,19 +176,45 @@ struct PlayerView: View {
         }
          */
         
-        .ornament(attachmentAnchor: .scene(.top)) {
+        .ornament(
+            attachmentAnchor: .scene(.top),
+            contentAlignment: .center
+        ) {
             HStack (spacing: 12) {
-                Button(playing ? "Pause" : "Play") {
-                    playing = !playing
+                HStack {
+                    Text("Speed")
+                        .font(.headline)
+                    
+                    Slider(value: $speed, in: 0...3, step: 0.01)
+                }
+                .padding(15)
+                .background(Color.gray.opacity(0.45))
+                .cornerRadius(40)
+                if playing {
+                    Button("Pause") {
+                        playing = false
+                    }
                 }
                 
-                Slider(value: $speed, in: 0...3, step: 0.01)
-                    .padding()
-                
-                Slider(value: $progress, in: 0...1, step: 0.01)
-                    .padding()
+                HStack {
+                    Text("Progress")
+                        .font(.headline)
+                        .fixedSize(horizontal: true, vertical: true)
+                    
+                    Slider(value: $progress, in: 0...1, step: 0.01)
+                        .frame(width: 600)
+                }
+                .padding(15)
+                .background(Color.gray.opacity(0.45))
+                .cornerRadius(40)
             }
         }
-         
+        .ornament(attachmentAnchor: .scene(.bottom)) {
+            if !playing {
+                Button("Play") {
+                    playing = true
+                }
+            }
+        }
     }
 }
