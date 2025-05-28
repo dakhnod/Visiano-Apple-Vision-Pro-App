@@ -29,7 +29,7 @@ struct VisianoApp: App {
             }
         }
         .windowStyle(.volumetric)
-        .defaultSize(width: 130, height: 60, depth: 20, in: .centimeters)
+        .defaultSize(width: 130, height: 60, depth: 60, in: .centimeters)
          
 
         /*

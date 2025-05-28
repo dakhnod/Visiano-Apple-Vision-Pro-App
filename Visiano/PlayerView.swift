@@ -17,11 +17,13 @@ struct PlayerView: View {
     @State private var displayLink: CADisplayLink?
     @State private var speed = 1.0
     @State private var progress = 0.0
+    @State private var angle = 45.0
     
     @State private var playing = false
     	
     let WHITE_KEY_WIDTH = 0.0235 as Float
     let BLACK_KEY_WIDTH = 0.01 as Float
+    let NOTEVIEW_Z_OFFSET = 0.025 as Float
     
     var noteList: [Note]
     
@@ -102,13 +104,16 @@ struct PlayerView: View {
             let KEYBOARD_WIDTH = Float(WHITE_KEY_COUNT) * WHITE_KEY_WIDTH // 1,222
             let KEYBOARD_START = KEYBOARD_WIDTH / -2
             
-            noteView.transform.translation = [KEYBOARD_START + WHITE_KEY_WIDTH / 2, 0, 0.025]
-            
             anchor.addChild(noteView)
             anchor.addChild(keyboard)
             
+            anchor.transform.translation = [
+                0.0,
+                -0.3,
+                0.1
+            ]
             
-            keyboard.transform.translation = SIMD3(KEYBOARD_START, -0.25, 0.1)
+            keyboard.transform.translation = [KEYBOARD_START, 0, 0.1]
             
             for index in 0..<WHITE_KEY_COUNT {
                 keyboard.addChild(generateWhiteKey(index: index))
@@ -135,7 +140,19 @@ struct PlayerView: View {
             content.add(anchor)
             
             let controller = AnimationController { displayLink in
-                noteView.transform.translation.y = Float(progress) * -5.5
+                let notesLength = 5.5
+                let angleRad = Float(angle / -180.0 * Double.pi)
+                
+                let hyp = Float(-notesLength * progress)
+                
+                noteView.transform.rotation = simd_quatf(angle: angleRad, axis: [1.0, 0.0, 0.0])
+                
+                noteView.transform.translation = [
+                    KEYBOARD_START + WHITE_KEY_WIDTH / 2,
+                    hyp * cos(angleRad),
+                    hyp * sin(angleRad) + NOTEVIEW_Z_OFFSET
+                ]
+                
                 
                 guard playing else { return }
                     
@@ -190,6 +207,17 @@ struct PlayerView: View {
                 .padding(15)
                 .background(Color.gray.opacity(0.45))
                 .cornerRadius(40)
+                
+                HStack {
+                    Text("Angle")
+                        .font(.headline)
+                    
+                    Slider(value: $angle, in: 1...90)
+                }
+                .padding(15)
+                .background(Color.gray.opacity(0.45))
+                .cornerRadius(40)
+                
                 if playing {
                     Button("Pause") {
                         playing = false
@@ -209,7 +237,7 @@ struct PlayerView: View {
                 .cornerRadius(40)
             }
         }
-        .ornament(attachmentAnchor: .scene(.bottom)) {
+        .ornament(attachmentAnchor: .scene(.bottomFront)) {
             if !playing {
                 Button("Play") {
                     playing = true
