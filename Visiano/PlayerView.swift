@@ -24,6 +24,12 @@ struct PlayerView: View {
     let WHITE_KEY_WIDTH = 0.0235 as Float
     let BLACK_KEY_WIDTH = 0.01 as Float
     let NOTEVIEW_Z_OFFSET = 0.025 as Float
+    var KEYBOARD_START = 0 as Float
+    let WHITE_KEY_COUNT = 52
+    
+    let BLACK_KEY_START: Float
+    let OCTAVE_WIDTH: Float
+    let KEYBOARD_WIDTH: Float // 1,222
     
     var noteList: [Note]
     
@@ -31,6 +37,11 @@ struct PlayerView: View {
     
     init(noteList: [Note]) {
         self.noteList = noteList
+        
+        BLACK_KEY_START = 3 * WHITE_KEY_WIDTH
+        OCTAVE_WIDTH = 7 * WHITE_KEY_WIDTH
+        KEYBOARD_WIDTH = Float(WHITE_KEY_COUNT) * WHITE_KEY_WIDTH // 1,222
+        KEYBOARD_START = KEYBOARD_WIDTH / -2
     }
     
     class AnimationController {
@@ -98,11 +109,6 @@ struct PlayerView: View {
             
             let keyboard = Entity()
             
-            let WHITE_KEY_COUNT = 52
-            let BLACK_KEY_START = 3 * WHITE_KEY_WIDTH
-            let OCTAVE_WIDTH = 7 * WHITE_KEY_WIDTH
-            let KEYBOARD_WIDTH = Float(WHITE_KEY_COUNT) * WHITE_KEY_WIDTH // 1,222
-            let KEYBOARD_START = KEYBOARD_WIDTH / -2
             
             anchor.addChild(noteView)
             anchor.addChild(keyboard)
@@ -140,25 +146,16 @@ struct PlayerView: View {
             content.add(anchor)
             
             let controller = AnimationController { displayLink in
-                let notesLength = 5.5
-                let angleRad = Float(angle / -180.0 * Double.pi)
-                
-                let hyp = Float(-notesLength * progress)
-                
-                noteView.transform.rotation = simd_quatf(angle: angleRad, axis: [1.0, 0.0, 0.0])
-                
-                noteView.transform.translation = [
-                    KEYBOARD_START + WHITE_KEY_WIDTH / 2,
-                    hyp * cos(angleRad),
-                    hyp * sin(angleRad) + NOTEVIEW_Z_OFFSET
-                ]
-                
-                
                 guard playing else { return }
                     
                 let delta = displayLink.targetTimestamp - displayLink.timestamp
                 
                 progress += delta * 0.01 * speed
+                
+                if progress > 1.0 {
+                    playing = false
+                    progress = 0.0
+                }
             }
             
             displayLink = CADisplayLink(target: controller, selector: #selector(controller.animationCallback))
@@ -170,6 +167,25 @@ struct PlayerView: View {
             if let scene = content.entities.first {
                 let uniformScale: Float = enlarge ? 1.4 : 1.0
                 scene.transform.scale = [uniformScale, uniformScale, uniformScale]
+            }
+             */
+            let notesLength = 5.5
+            let angleRad = Float(angle / -180.0 * Double.pi)
+            
+            let hyp = Float(-notesLength * progress)
+            
+            noteView.transform.rotation = simd_quatf(angle: angleRad, axis: [1.0, 0.0, 0.0])
+            
+            noteView.transform.translation = [
+                KEYBOARD_START + WHITE_KEY_WIDTH / 2,
+                hyp * cos(angleRad),
+                hyp * sin(angleRad) + NOTEVIEW_Z_OFFSET
+            ]
+            
+            /*
+            if let containerSize = content.view?.bounds.size {
+                print("RealityView container size: \(containerSize)")
+                // React to new size here!
             }
              */
         }
@@ -244,5 +260,7 @@ struct PlayerView: View {
                 }
             }
         }
+        // .frame(depth: 0.6)
+        // .frame(width: 1.3, height: 0.6, alignment: .center)
     }
 }
