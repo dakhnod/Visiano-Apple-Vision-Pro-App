@@ -5,6 +5,9 @@ import MIDIKitCore
 
 struct MenuView: View {
     @State private var showPicker = false
+    @State private var tracks: [String] = ["Track1", "Left hand"]
+    
+    @State private var checked = false
     
     var onProcess: ([Note]) -> Void
     
@@ -90,5 +93,16 @@ struct MenuView: View {
                 }
             }
         }
+        
+         Text("Tracks in FILENAME:")
+         VStack {
+         ForEach(tracks, id: \.self) { trackTitle in
+                 Toggle(isOn: $checked) {
+                     Text(trackTitle)
+                 }
+            }
+         }
     }
 }
+
+
