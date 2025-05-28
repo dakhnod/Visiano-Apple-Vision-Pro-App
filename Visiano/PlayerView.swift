@@ -181,13 +181,7 @@ struct PlayerView: View {
                 hyp * cos(angleRad),
                 hyp * sin(angleRad) + NOTEVIEW_Z_OFFSET
             ]
-            
-            /*
-            if let containerSize = content.view?.bounds.size {
-                print("RealityView container size: \(containerSize)")
-                // React to new size here!
-            }
-             */
+             
         }
         .gesture(TapGesture().targetedToAnyEntity().onEnded { _ in
             enlarge.toggle()
@@ -210,7 +204,7 @@ struct PlayerView: View {
          */
         
         .ornament(
-            attachmentAnchor: .scene(.top),
+            attachmentAnchor: .scene(.topFront),
             contentAlignment: .center
         ) {
             HStack (spacing: 12) {
@@ -260,6 +254,7 @@ struct PlayerView: View {
                 }
             }
         }
+        .supportedVolumeViewpoints([.front])
         // .frame(depth: 0.6)
         // .frame(width: 1.3, height: 0.6, alignment: .center)
     }

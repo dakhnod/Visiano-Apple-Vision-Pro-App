@@ -26,11 +26,14 @@ struct VisianoApp: App {
                 PlayerView(noteList: notes)
                     .environment(appModel)
                     .volumeBaseplateVisibility(.visible)
+                    // .frame(depth: 0.6)
+                    // .frame(width: 1.3, height: 0.6)
             }
         }
         .windowStyle(.volumetric)
         .defaultSize(width: 130, height: 60, depth: 60, in: .centimeters)
-         
+        .volumeWorldAlignment(.gravityAligned)
+        .windowResizability(.contentSize)
 
         /*
         ImmersiveSpace(id: appModel.immersiveSpaceID) {
