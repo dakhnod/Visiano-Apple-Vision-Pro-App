@@ -199,7 +199,6 @@
 			mainGroup = D7A7ED1F2DE3954400B71F30;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				D72B21EB2DE501FE00B0CF55 /* XCLocalSwiftPackageReference "../../Downloads/MidiParser" */,
 				D72B21EC2DE5031B00B0CF55 /* XCRemoteSwiftPackageReference "MIDIKit" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -496,13 +495,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		D72B21EB2DE501FE00B0CF55 /* XCLocalSwiftPackageReference "../../Downloads/MidiParser" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../Downloads/MidiParser;
-		};
-/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
 		D72B21EC2DE5031B00B0CF55 /* XCRemoteSwiftPackageReference "MIDIKit" */ = {
