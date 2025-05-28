@@ -20,6 +20,9 @@ struct PlayerView: View {
     @State private var angle = 45.0
     
     @State private var playing = false
+    
+    @State private var originalSize: Size3D?
+    @State private var sceneScale: Float = 1.0
     	
     let WHITE_KEY_WIDTH = 0.0235 as Float
     let BLACK_KEY_WIDTH = 0.01 as Float
@@ -103,159 +106,155 @@ struct PlayerView: View {
     }
 
     var body: some View {
-        RealityView { content in
-            // Add the initial RealityKit content
-            let anchor = Entity()
-            
-            let keyboard = Entity()
-            
-            
-            anchor.addChild(noteView)
-            anchor.addChild(keyboard)
-            
-            anchor.transform.translation = [
-                0.0,
-                -0.3,
-                0.1
-            ]
-            
-            keyboard.transform.translation = [KEYBOARD_START, 0, 0.1]
-            
-            for index in 0..<WHITE_KEY_COUNT {
-                keyboard.addChild(generateWhiteKey(index: index))
-            }
-            
-            for offset in [0, 1, 3, 4, 5] {
-                for index in 0..<7 {
+        GeometryReader3D { geometry in
+            RealityView { content in
+                // Add the initial RealityKit content
+                let anchor = Entity()
+                
+                let keyboard = Entity()
+                
+                anchor.addChild(noteView)
+                anchor.addChild(keyboard)
+                
+                anchor.transform.translation = [
+                    0.0,
+                    -0.30,
+                    0.1
+                ]
+                
+                keyboard.transform.translation = [KEYBOARD_START, 0, 0.1]
+                
+                for index in 0..<WHITE_KEY_COUNT {
+                    keyboard.addChild(generateWhiteKey(index: index))
+                }
+                
+                for offset in [0, 1, 3, 4, 5] {
+                    for index in 0..<7 {
+                        keyboard.addChild(
+                            generateBlackKey(xOffset: BLACK_KEY_START + (Float(index) * OCTAVE_WIDTH) + (Float(offset) * WHITE_KEY_WIDTH))
+                        )
+                    }
+                }
+                
+                for offset in [1] {
                     keyboard.addChild(
-                        generateBlackKey(xOffset: BLACK_KEY_START + (Float(index) * OCTAVE_WIDTH) + (Float(offset) * WHITE_KEY_WIDTH))
+                        generateBlackKey(xOffset: Float(offset) * WHITE_KEY_WIDTH)
                     )
                 }
-            }
-            
-            for offset in [1] {
-                keyboard.addChild(
-                    generateBlackKey(xOffset: Float(offset) * WHITE_KEY_WIDTH)
-                )
-            }
-            
-            for note in noteList {
-                noteView.addChild(generateNote(note: note))
-            }
-            	
-            content.add(anchor)
-            
-            let controller = AnimationController { displayLink in
-                guard playing else { return }
+                
+                for note in noteList {
+                    noteView.addChild(generateNote(note: note))
+                }
+                
+                content.add(anchor)
+                
+                let controller = AnimationController { displayLink in
+                    guard playing else { return }
                     
-                let delta = displayLink.targetTimestamp - displayLink.timestamp
-                
-                progress += delta * 0.01 * speed
-                
-                if progress > 1.0 {
-                    playing = false
-                    progress = 0.0
-                }
-            }
-            
-            displayLink = CADisplayLink(target: controller, selector: #selector(controller.animationCallback))
-            
-            displayLink?.add(to: .main, forMode: .default)
-        } update: { content in
-            // Update the RealityKit content when SwiftUI state changes
-            /*
-            if let scene = content.entities.first {
-                let uniformScale: Float = enlarge ? 1.4 : 1.0
-                scene.transform.scale = [uniformScale, uniformScale, uniformScale]
-            }
-             */
-            let notesLength = 5.5
-            let angleRad = Float(angle / -180.0 * Double.pi)
-            
-            let hyp = Float(-notesLength * progress)
-            
-            noteView.transform.rotation = simd_quatf(angle: angleRad, axis: [1.0, 0.0, 0.0])
-            
-            noteView.transform.translation = [
-                KEYBOARD_START + WHITE_KEY_WIDTH / 2,
-                hyp * cos(angleRad),
-                hyp * sin(angleRad) + NOTEVIEW_Z_OFFSET
-            ]
-             
-        }
-        .gesture(TapGesture().targetedToAnyEntity().onEnded { _ in
-            enlarge.toggle()
-        })
-        .toolbar {
-            ToolbarItemGroup(placement: .bottomOrnament) {
-            }
-        }
-        
-        /*
-        .toolbar {
-            ToolbarItemGroup(placement: .principal) {
-                HStack (spacing: 12) {
-                    Button(playing ? "Pause" : "Play") {
-                        playing = !playing
-                    }
-                }
-            }
-        }
-         */
-        
-        .ornament(
-            attachmentAnchor: .scene(.topFront),
-            contentAlignment: .center
-        ) {
-            HStack (spacing: 12) {
-                HStack {
-                    Text("Speed")
-                        .font(.headline)
+                    let delta = displayLink.targetTimestamp - displayLink.timestamp
                     
-                    Slider(value: $speed, in: 0...3, step: 0.01)
-                }
-                .padding(15)
-                .background(Color.gray.opacity(0.45))
-                .cornerRadius(40)
-                
-                HStack {
-                    Text("Angle")
-                        .font(.headline)
+                    progress += delta * 0.01 * speed
                     
-                    Slider(value: $angle, in: 1...90)
-                }
-                .padding(15)
-                .background(Color.gray.opacity(0.45))
-                .cornerRadius(40)
-                
-                if playing {
-                    Button("Pause") {
+                    if progress > 1.0 {
                         playing = false
+                        progress = 0.0
                     }
                 }
                 
-                HStack {
-                    Text("Progress")
-                        .font(.headline)
-                        .fixedSize(horizontal: true, vertical: true)
+                displayLink = CADisplayLink(target: controller, selector: #selector(controller.animationCallback))
+                
+                displayLink?.add(to: .main, forMode: .default)
+            } update: { content in
+                // Update the RealityKit content when SwiftUI state changes
+                if let scene = content.entities.first {
+                    scene.transform.scale = [sceneScale, sceneScale, sceneScale]
+                }
+                
+                let notesLength = 5.5
+                let angleRad = Float(angle / -180.0 * Double.pi)
+                
+                let hyp = Float(-notesLength * progress)
+                
+                noteView.transform.rotation = simd_quatf(angle: angleRad, axis: [1.0, 0.0, 0.0])
+                
+                noteView.transform.translation = [
+                    KEYBOARD_START + WHITE_KEY_WIDTH / 2,
+                    hyp * cos(angleRad),
+                    hyp * sin(angleRad) + NOTEVIEW_Z_OFFSET
+                ]
+                
+            }
+            .gesture(TapGesture().targetedToAnyEntity().onEnded { _ in
+                enlarge.toggle()
+            })
+            .toolbar {
+                ToolbarItemGroup(placement: .bottomOrnament) {
+                }
+            }
+            .onAppear {
+                originalSize = geometry.size
+            }
+            .onChange(of: geometry.size) { newSize in
+                if let originalSize {
+                    sceneScale = Float(newSize.height / originalSize.height)
+                    print(sceneScale)
+                }
+            }
+            
+            .ornament(
+                attachmentAnchor: .scene(.topFront),
+                contentAlignment: .center
+            ) {
+                HStack (spacing: 12) {
+                    HStack {
+                        Text("Speed")
+                            .font(.headline)
+                        
+                        Slider(value: $speed, in: 0...3, step: 0.01)
+                    }
+                    .padding(15)
+                    .background(Color.gray.opacity(0.45))
+                    .cornerRadius(40)
                     
-                    Slider(value: $progress, in: 0...1, step: 0.01)
-                        .frame(width: 600)
+                    HStack {
+                        Text("Angle")
+                            .font(.headline)
+                        
+                        Slider(value: $angle, in: 1...90)
+                    }
+                    .padding(15)
+                    .background(Color.gray.opacity(0.45))
+                    .cornerRadius(40)
+                    
+                    if playing {
+                        Button("Pause") {
+                            playing = false
+                        }
+                    }
+                    
+                    HStack {
+                        Text("Progress")
+                            .font(.headline)
+                            .fixedSize(horizontal: true, vertical: true)
+                        
+                        Slider(value: $progress, in: 0...1, step: 0.01)
+                            .frame(width: 600)
+                    }
+                    .padding(15)
+                    .background(Color.gray.opacity(0.45))
+                    .cornerRadius(40)
                 }
-                .padding(15)
-                .background(Color.gray.opacity(0.45))
-                .cornerRadius(40)
             }
-        }
-        .ornament(attachmentAnchor: .scene(.bottomFront)) {
-            if !playing {
-                Button("Play") {
-                    playing = true
+            .ornament(attachmentAnchor: .scene(.bottomFront)) {
+                if !playing {
+                    Button("Play") {
+                        playing = true
+                    }
                 }
             }
+            .supportedVolumeViewpoints([.front])
+            // .frame(depth: 0.6)
+            // .frame(width: 1.3, height: 0.6, alignment: .center)
         }
-        .supportedVolumeViewpoints([.front])
-        // .frame(depth: 0.6)
-        // .frame(width: 1.3, height: 0.6, alignment: .center)
     }
 }
