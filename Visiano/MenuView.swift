@@ -151,9 +151,6 @@ struct MenuView: View {
                         for fileEvent in selectedCandidate.track.events {
                             let event = fileEvent.event()
                             currentTick += fileEvent.delta.ticksValue(using: .musical(ticksPerQuarterNote: 1000))
-
-                            print(fileEvent)
-                            print()
                             
                             let noteEnd = Float(currentTick) * secondsPerTick
                             

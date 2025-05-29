@@ -54,6 +54,7 @@ struct PlayerView: View {
     
     @State var trackPointers = [Int]()
     
+    let anchor = Entity()
     var noteView = Entity()
     
     init(song: Song) {
@@ -147,18 +148,11 @@ struct PlayerView: View {
         GeometryReader3D { geometry in
             RealityView { content in
                 // Add the initial RealityKit content
-                let anchor = Entity()
                 
                 let keyboard = Entity()
                 
                 anchor.addChild(noteView)
                 anchor.addChild(keyboard)
-                
-                anchor.transform.translation = [
-                    0.0,
-                    -0.30,
-                    0.1
-                ]
                 
                 keyboard.transform.translation = [KEYBOARD_START, 0, 0.1]
                 
@@ -270,6 +264,11 @@ struct PlayerView: View {
                 
                 displayLink?.add(to: .main, forMode: .default)
             } update: { content in
+                anchor.transform.translation = [
+                    0.0,
+                    -0.30 * sceneScale,
+                    0.1 * sceneScale
+                ]
                 // Update the RealityKit content when SwiftUI state changes
                 if let scene = content.entities.first {
                     scene.transform.scale = [sceneScale, sceneScale, sceneScale]
@@ -301,7 +300,6 @@ struct PlayerView: View {
             .onChange(of: geometry.size) { newSize in
                 if let originalSize {
                     sceneScale = Float(newSize.height / originalSize.height)
-                    print(sceneScale)
                 }
             }
             
