@@ -222,7 +222,7 @@ struct PlayerView: View {
                                 // note has passed
                                 trackPointers[trackIndex] += 1
                                 if note.sharp {
-                                    if var indicator = sharpIndicators[noteIndex - 2] {
+                                    if let indicator = sharpIndicators[noteIndex - 2] {
                                         if var model = indicator.model {
                                             model.materials = [SimpleMaterial(color: .black, isMetallic: false)]
                                             indicator.model = model
@@ -238,7 +238,7 @@ struct PlayerView: View {
                             
                             // at this point we are inside the note
                             if note.sharp {
-                                if var indicator = sharpIndicators[noteIndex - 2]{
+                                if let indicator = sharpIndicators[noteIndex - 2]{
                                     if var model = indicator.model {
                                         model.materials = [SimpleMaterial(color: color, isMetallic: false)]
                                         indicator.model = model
@@ -259,6 +259,10 @@ struct PlayerView: View {
                         progress = PROGRESS_MIN
                         pausedTime = 0
                         playStart = 0
+                        
+                        for i in 0..<trackPointers.count {
+                            trackPointers[i] = 0
+                        }
                     }
                 }
                 
@@ -339,6 +343,12 @@ struct PlayerView: View {
                         
                         Slider(value: $progress, in: PROGRESS_MIN...1, step: 0.01) { editing in
                             dragged = editing
+                            
+                            if !editing {
+                                for i in 0..<trackPointers.count {
+                                    trackPointers[i] = 0
+                                }
+                            }
                         }
                             .frame(width: 600)
                     }
