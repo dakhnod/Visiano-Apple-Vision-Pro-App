@@ -60,7 +60,7 @@ struct PlayerView: View {
     }
     
     func generateNote(note: Note, index: Int) -> Entity {
-        let colors: [UIColor] = [.blue, .red]
+        let colors: [UIColor] = [.blue, .red, .green, .cyan, .yellow]
         let handColor = colors[index % colors.count]
         
         let lengthFactor = Float(10000)
