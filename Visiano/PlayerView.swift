@@ -25,7 +25,8 @@ struct PlayerView: View {
     @State private var originalSize: Size3D?
     @State private var sceneScale: Float = 1.0
     
-    @State var noteIndicators = [Entity]()
+    @State var noteIndicators = [ModelEntity]()
+    @State var sharpIndicators = [ModelEntity]()
     
     @State var playStart = 0.0
     @State var pausedTime = 0.0
@@ -49,7 +50,9 @@ struct PlayerView: View {
     
     var song: Song
     
-    var trackPointers = [Int]()
+    let HAND_COLORS: [UIColor] = [.blue, .red, .green, .cyan, .yellow]
+    
+    @State var trackPointers = [Int]()
     
     var noteView = Entity()
     
@@ -65,10 +68,6 @@ struct PlayerView: View {
         // always give 5 seconds of headroom
         PROGRESS_MIN = -SONG_HEADROOM / song.duration
         progress = PROGRESS_MIN
-        
-        for _ in song.notes {
-            trackPointers.append(0)
-        }
     }
     
     class AnimationController {
@@ -84,8 +83,7 @@ struct PlayerView: View {
     }
     
     func generateNote(note: Song.Note, index: Int) -> Entity {
-        let colors: [UIColor] = [.blue, .red, .green, .cyan, .yellow]
-        let handColor = colors[index % colors.count]
+        let handColor = HAND_COLORS[index % HAND_COLORS.count]
                 
         // shorten by 5mm to allow for gaps
         let length = (Float(note.duration) * METERS_PER_SECOND) - 0.002
@@ -186,6 +184,10 @@ struct PlayerView: View {
                 
                 content.add(anchor)
                 
+                for _ in song.notes {
+                    trackPointers.append(0)
+                }
+                
                 let controller = AnimationController { displayLink in
                     if dragged {
                         playStart = displayLink.targetTimestamp - (Double(song.duration) * Double(progress)) - Double(SONG_HEADROOM)
@@ -207,16 +209,39 @@ struct PlayerView: View {
                         return
                     }
                     
-                    let playedTime = displayLink.targetTimestamp - playStart - Double(SONG_HEADROOM)
+                    let playedTime = Float(displayLink.targetTimestamp - playStart - Double(SONG_HEADROOM))
                     
-                    // TODO
-                    progress = Float(playedTime) / song.duration // 1.5 is a hotfix for the SIMULATOR
+                    progress = playedTime / song.duration
                     
-                    for (index, track) in song.notes.enumerated() {
-                        for i in trackPointers[index]..<track.count {
+                    for (trackIndex, track) in song.notes.enumerated() {
+                        for i in trackPointers[trackIndex]..<track.count {
                             let note = track[i]
+                            let noteIndex = Int(note.index + 2)
+                            
+                            if playedTime < note.start {
+                                // have not reached the note yet
+                                break;
+                            }
                             
                             
+                            if playedTime > (note.end - 0.05) {
+                                // note has passed
+                                trackPointers[trackIndex] += 1
+                                if !note.sharp {
+                                    noteIndicators[noteIndex].isEnabled = false
+                                }
+                                continue
+                            }
+                            
+                            // at this point we are inside the note
+                            if !note.sharp {
+                                let color = HAND_COLORS[trackIndex % HAND_COLORS.count]
+                                if var model = noteIndicators[noteIndex].model {
+                                    model.materials = [SimpleMaterial(color: color, isMetallic: false)]
+                                    noteIndicators[noteIndex].model = model
+                                }
+                                noteIndicators[noteIndex].isEnabled = true
+                            }
                         }
                     }
                     
