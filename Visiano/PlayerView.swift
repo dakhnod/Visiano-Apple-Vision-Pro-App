@@ -34,12 +34,12 @@ struct PlayerView: View {
     let OCTAVE_WIDTH: Float
     let KEYBOARD_WIDTH: Float // 1,222
     
-    var noteList: [Note]
+    var noteList: [[Note]]
     
     var noteView = Entity()
     
-    init(noteList: [Note]) {
-        self.noteList = noteList
+    init(notesList: [[Note]]) {
+        self.noteList = notesList
         
         BLACK_KEY_START = 3 * WHITE_KEY_WIDTH
         OCTAVE_WIDTH = 7 * WHITE_KEY_WIDTH
@@ -59,7 +59,10 @@ struct PlayerView: View {
         }
     }
     
-    func generateNote(note: Note) -> Entity {
+    func generateNote(note: Note, index: Int) -> Entity {
+        let colors: [UIColor] = [.blue, .red]
+        let handColor = colors[index % colors.count]
+        
         let lengthFactor = Float(10000)
         
         // shorten by 5mm to allow for gaps
@@ -68,11 +71,11 @@ struct PlayerView: View {
         let width = note.sharp ? BLACK_KEY_WIDTH : WHITE_KEY_WIDTH
         
         let mesh = MeshResource.generateBox(size: SIMD3(width, length, 0))
-        let material = SimpleMaterial(color: .blue, isMetallic: false)
+        let material = SimpleMaterial(color: handColor, isMetallic: false)
         let bar = ModelEntity(mesh: mesh, materials: [material])
         
         bar.transform.translation = [
-            Float(note.index - 5) * WHITE_KEY_WIDTH,
+            (Float(note.index) * WHITE_KEY_WIDTH) + (2 * WHITE_KEY_WIDTH),
             (Float(note.start) / lengthFactor) + (length / 2),
             0
         ]
@@ -142,8 +145,10 @@ struct PlayerView: View {
                     )
                 }
                 
-                for note in noteList {
-                    noteView.addChild(generateNote(note: note))
+                for (index, notes) in noteList.enumerated() {
+                    for note in notes {
+                        noteView.addChild(generateNote(note: note, index: index))
+                    }
                 }
                 
                 content.add(anchor)

@@ -4,12 +4,18 @@ import MIDIKitSMF
 import MIDIKitCore
 
 struct MenuView: View {
+    struct TrackCandidate {
+        let index: Int
+        let name: String
+        var selected: Bool
+        let track: MIDIFile.Chunk.Track
+    }
+    
     @State private var showPicker = false
-    @State private var tracks: [String] = ["Track1", "Left hand"]
-    
-    @State private var checked = false
-    
-    var onProcess: ([Note]) -> Void
+    @State private var tracks: [TrackCandidate] = []
+    @State private var selectedFileName = ""
+        
+    var onProcess: ([[Note]]) -> Void
     
     func convertEventToNode(note: MIDINote, start: UInt32, currentTick: UInt32) -> Note{
         let duration = currentTick - start
@@ -45,48 +51,33 @@ struct MenuView: View {
             DocumentPicker { urls in
                 if let url = urls.first {
                     do {
+                        selectedFileName = url.lastPathComponent
+                        
+                        tracks = []
+                        
                         let midiFile = try MIDIFile(midiFile: url)
-                        let tracks = midiFile.tracks
-                        let leftHand = tracks[1]
                         
-                        
-                        var openNotes = [String: UInt32]()
-                        var currentTick = UInt32(0)
-                        
-                        var notesList = [Note]()
-                        
-                        for fileEvent in leftHand.events {
-                            let event = fileEvent.event()
-                            currentTick += fileEvent.delta.ticksValue(using: .musical(ticksPerQuarterNote: 100))
-                            
-                            switch(event) {
-                            case let .noteOn(event):
-                                if event.velocity.unitIntervalValue == 0.0 {
-                                    if let start = openNotes[event.note.stringValue()] {
-                                        notesList.append(
-                                            convertEventToNode(note: event.note, start: start, currentTick: currentTick)
-                                        )
-                                    }
-                                    break;
-                                }
-                                
-                                openNotes[event.note.stringValue()] = currentTick;
-                            case let .noteOff(event):
-                                if let start = openNotes[event.note.stringValue()] {
-                                    if let start = openNotes[event.note.stringValue()] {
-                                        notesList.append(
-                                            convertEventToNode(note: event.note, start: start, currentTick: currentTick)
-                                        )
+                        for track in midiFile.tracks {
+                            func getTrackName() -> String {
+                                for fileEvent in track.events {
+                                    if let text = fileEvent.smfUnwrappedEvent.event as? MIDIKitSMF.MIDIFileEvent.Text {
+                                        if text.textType == .trackOrSequenceName {
+                                            return text.text
+                                        }
                                     }
                                 }
-                                break
-                                
-                            default:
-                                break
+                                 
+                                return "Unknown track"
                             }
+                            
+                            let name = getTrackName()
+                            tracks.append(TrackCandidate(
+                                index: tracks.count,
+                                name: name,
+                                selected: name.lowercased().contains("hand"),
+                                track: track
+                            ))
                         }
-                        
-                        onProcess(notesList)
                     } catch {
                         print("Failed to load MIDI file:", error)
                     }
@@ -94,14 +85,56 @@ struct MenuView: View {
             }
         }
         
-         Text("Tracks in FILENAME:")
-         VStack {
-         ForEach(tracks, id: \.self) { trackTitle in
-                 Toggle(isOn: $checked) {
-                     Text(trackTitle)
-                 }
+        if !tracks.isEmpty {
+            Text("Tracks in \(selectedFileName):")
+                .font(.headline)
+            VStack {
+                ForEach($tracks, id: \.index) { $trackCandidate in
+                    Toggle(trackCandidate.name, isOn: $trackCandidate.selected)
+                }
             }
-         }
+            Button("Start playing") {
+                var notesListList = [[Note]]()
+                for selectedCandidate in tracks where selectedCandidate.selected {
+                    var openNotes = [String: UInt32]()
+                    var currentTick = UInt32(0)
+                    
+                    var notesList = [Note]()
+                    
+                    for fileEvent in selectedCandidate.track.events {
+                        let event = fileEvent.event()
+                        currentTick += fileEvent.delta.ticksValue(using: .musical(ticksPerQuarterNote: 100))
+                        
+                        switch(event) {
+                        case let .noteOn(event):
+                            if event.velocity.unitIntervalValue == 0.0 {
+                                if let start = openNotes[event.note.stringValue()] {
+                                    notesList.append(
+                                        convertEventToNode(note: event.note, start: start, currentTick: currentTick)
+                                    )
+                                }
+                                break;
+                            }
+                            
+                            openNotes[event.note.stringValue()] = currentTick;
+                        case let .noteOff(event):
+                            if let start = openNotes[event.note.stringValue()] {
+                                notesList.append(
+                                    convertEventToNode(note: event.note, start: start, currentTick: currentTick)
+                                )
+                            }
+                            break
+                            
+                        default:
+                            break
+                        }
+                    }
+                    
+                    notesListList.append(notesList)
+                }
+                onProcess(notesListList)
+            }
+        }
     }
 }
 
