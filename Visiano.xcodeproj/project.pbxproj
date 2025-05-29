@@ -12,7 +12,7 @@
 		D72B21F22DE5031B00B0CF55 /* MIDIKitSMF in Frameworks */ = {isa = PBXBuildFile; productRef = D72B21F12DE5031B00B0CF55 /* MIDIKitSMF */; };
 		D7A7ED2E2DE3954400B71F30 /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = D7A7ED2D2DE3954400B71F30 /* RealityKitContent */; };
 		D7E0ACBE2DE901F500578743 /* teddybear.mid in Resources */ = {isa = PBXBuildFile; fileRef = D7E0ACBD2DE901F500578743 /* teddybear.mid */; };
-		D7E0ACC02DE9049F00578743 /* 100055.mid in Resources */ = {isa = PBXBuildFile; fileRef = D7E0ACBF2DE9049F00578743 /* 100055.mid */; };
+		D7E0ACC02DE9049F00578743 /* Äntchen.mid in Resources */ = {isa = PBXBuildFile; fileRef = D7E0ACBF2DE9049F00578743 /* Äntchen.mid */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -30,7 +30,7 @@
 		D7A7ED2C2DE3954400B71F30 /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
 		D7A7ED432DE3954500B71F30 /* VisianoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VisianoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7E0ACBD2DE901F500578743 /* teddybear.mid */ = {isa = PBXFileReference; lastKnownFileType = audio.midi; path = teddybear.mid; sourceTree = "<group>"; };
-		D7E0ACBF2DE9049F00578743 /* 100055.mid */ = {isa = PBXFileReference; lastKnownFileType = audio.midi; path = 100055.mid; sourceTree = "<group>"; };
+		D7E0ACBF2DE9049F00578743 /* Äntchen.mid */ = {isa = PBXFileReference; lastKnownFileType = audio.midi; path = "Äntchen.mid"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -89,7 +89,7 @@
 				D7A7ED462DE3954500B71F30 /* VisianoTests */,
 				D7A7ED292DE3954400B71F30 /* Products */,
 				D7E0ACBD2DE901F500578743 /* teddybear.mid */,
-				D7E0ACBF2DE9049F00578743 /* 100055.mid */,
+				D7E0ACBF2DE9049F00578743 /* Äntchen.mid */,
 			);
 			sourceTree = "<group>";
 		};
@@ -210,7 +210,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D7E0ACC02DE9049F00578743 /* 100055.mid in Resources */,
+				D7E0ACC02DE9049F00578743 /* Äntchen.mid in Resources */,
 				D7E0ACBE2DE901F500578743 /* teddybear.mid in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

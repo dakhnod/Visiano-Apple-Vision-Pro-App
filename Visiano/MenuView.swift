@@ -94,7 +94,7 @@ struct MenuView: View {
         }
         
         Button("Alle meine Äntchen") {
-            if let url = Bundle.main.url(forResource: "100055", withExtension: "mid") {
+            if let url = Bundle.main.url(forResource: "Äntchen", withExtension: "mid") {
                 handleURL(url: url)
             }
         }
