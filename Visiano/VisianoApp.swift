@@ -21,9 +21,9 @@ struct VisianoApp: App {
         }
         .windowStyle(.plain)
         
-        WindowGroup(for: [[Note]].self) { $notes in
-            if let notes {
-                PlayerView(notesList: notes)
+        WindowGroup(for: Song.self) { $song in
+            if let song {
+                PlayerView(song: song)
                     .environment(appModel)
                     .volumeBaseplateVisibility(.visible)
                     // .frame(depth: 0.6)

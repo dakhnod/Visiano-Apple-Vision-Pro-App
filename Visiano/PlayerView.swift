@@ -16,7 +16,7 @@ struct PlayerView: View {
     @State var buttonVisible = true
     @State private var displayLink: CADisplayLink?
     @State private var speed = 1.0
-    @State private var progress = 0.0
+    @State private var progress = 0.0 as Float
     @State private var angle = 45.0
     
     @State private var playing = false
@@ -33,18 +33,22 @@ struct PlayerView: View {
     let BLACK_KEY_START: Float
     let OCTAVE_WIDTH: Float
     let KEYBOARD_WIDTH: Float // 1,222
+    let SONG_LENGTH_METERS: Float
     
-    var noteList: [[Note]]
+    let METERS_PER_SECOND: Float = 0.05
+    
+    var song: Song
     
     var noteView = Entity()
     
-    init(notesList: [[Note]]) {
-        self.noteList = notesList
+    init(song: Song) {
+        self.song = song
         
         BLACK_KEY_START = 3 * WHITE_KEY_WIDTH
         OCTAVE_WIDTH = 7 * WHITE_KEY_WIDTH
         KEYBOARD_WIDTH = Float(WHITE_KEY_COUNT) * WHITE_KEY_WIDTH // 1,222
         KEYBOARD_START = KEYBOARD_WIDTH / -2
+        SONG_LENGTH_METERS = song.duration * METERS_PER_SECOND
     }
     
     class AnimationController {
@@ -59,14 +63,12 @@ struct PlayerView: View {
         }
     }
     
-    func generateNote(note: Note, index: Int) -> Entity {
+    func generateNote(note: Song.Note, index: Int) -> Entity {
         let colors: [UIColor] = [.blue, .red, .green, .cyan, .yellow]
         let handColor = colors[index % colors.count]
-        
-        let lengthFactor = Float(10000)
-        
+                
         // shorten by 5mm to allow for gaps
-        let length = (Float(note.duration) / lengthFactor) - 0.002
+        let length = (Float(note.duration) * METERS_PER_SECOND) - 0.002
         
         let width = note.sharp ? BLACK_KEY_WIDTH : WHITE_KEY_WIDTH
         
@@ -76,7 +78,7 @@ struct PlayerView: View {
         
         bar.transform.translation = [
             (Float(note.index) * WHITE_KEY_WIDTH) + (2 * WHITE_KEY_WIDTH),
-            (Float(note.start) / lengthFactor) + (length / 2),
+            (Float(note.start) * METERS_PER_SECOND) + (length / 2),
             0
         ]
         
@@ -145,7 +147,7 @@ struct PlayerView: View {
                     )
                 }
                 
-                for (index, notes) in noteList.enumerated() {
+                for (index, notes) in song.notes.enumerated() {
                     for note in notes {
                         noteView.addChild(generateNote(note: note, index: index))
                     }
@@ -158,7 +160,8 @@ struct PlayerView: View {
                     
                     let delta = displayLink.targetTimestamp - displayLink.timestamp
                     
-                    progress += delta * 0.01 * speed
+                    // TODO
+                    progress += Float(delta) / song.duration * Float(speed) * 1.5 // REMOVE THE LAST THING
                     
                     if progress > 1.0 {
                         playing = false
@@ -175,10 +178,9 @@ struct PlayerView: View {
                     scene.transform.scale = [sceneScale, sceneScale, sceneScale]
                 }
                 
-                let notesLength = 5.5
                 let angleRad = Float(angle / -180.0 * Double.pi)
                 
-                let hyp = Float(-notesLength * progress)
+                let hyp = Float(-SONG_LENGTH_METERS * Float(progress))
                 
                 noteView.transform.rotation = simd_quatf(angle: angleRad, axis: [1.0, 0.0, 0.0])
                 

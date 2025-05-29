@@ -14,11 +14,12 @@ struct MenuView: View {
     @State private var showPicker = false
     @State private var tracks: [TrackCandidate] = []
     @State private var selectedFileName = ""
+    @State private var selectedMidiFile: MIDIFile?
         
-    var onProcess: ([[Note]]) -> Void
+    var onProcess: (Song) -> Void
     
-    func convertEventToNode(note: MIDINote, start: UInt32, currentTick: UInt32) -> Note{
-        let duration = currentTick - start
+    func convertEventToNode(note: MIDINote, start: Float, end: Float) -> Song.Note {
+        let duration = end - start
         
         let startIndex = note.octave * 7
         
@@ -36,15 +37,12 @@ struct MenuView: View {
         case .A_sharp: 5
         case .B: 6
         }
-        
-        print(note.stringValue())
-        
-        return Note(index: UInt8(startIndex + octaveIndex), sharp: note.isSharp, start: start, end: start + duration, duration: duration)
+                
+        return Song.Note(index: UInt8(startIndex + octaveIndex), sharp: note.isSharp, start: start, end: end, duration: duration)
     }
 
      var body: some View {
         Button("Pick MIDI File") {
-            print("pressed")
             showPicker = true
         }
         .sheet(isPresented: $showPicker) {
@@ -55,28 +53,32 @@ struct MenuView: View {
                         
                         tracks = []
                         
-                        let midiFile = try MIDIFile(midiFile: url)
+                        selectedMidiFile = try MIDIFile(midiFile: url)
                         
-                        for track in midiFile.tracks {
-                            func getTrackName() -> String {
-                                for fileEvent in track.events {
-                                    if let text = fileEvent.smfUnwrappedEvent.event as? MIDIKitSMF.MIDIFileEvent.Text {
-                                        if text.textType == .trackOrSequenceName {
-                                            return text.text
+                        if let selectedMidiFile {
+                            for trackIndex in 1..<selectedMidiFile.tracks.count {
+                                let track = selectedMidiFile.tracks[trackIndex]
+                                
+                                func getTrackName() -> String {
+                                    for fileEvent in track.events {
+                                        if let text = fileEvent.smfUnwrappedEvent.event as? MIDIKitSMF.MIDIFileEvent.Text {
+                                            if text.textType == .trackOrSequenceName {
+                                                return text.text
+                                            }
                                         }
                                     }
+                                    
+                                    return "Unknown track"
                                 }
-                                 
-                                return "Unknown track"
+                                
+                                let name = getTrackName()
+                                tracks.append(TrackCandidate(
+                                    index: tracks.count,
+                                    name: name,
+                                    selected: name.lowercased().contains("hand"),
+                                    track: track
+                                ))
                             }
-                            
-                            let name = getTrackName()
-                            tracks.append(TrackCandidate(
-                                index: tracks.count,
-                                name: name,
-                                selected: name.lowercased().contains("hand"),
-                                track: track
-                            ))
                         }
                     } catch {
                         print("Failed to load MIDI file:", error)
@@ -94,45 +96,73 @@ struct MenuView: View {
                 }
             }
             Button("Start playing") {
-                var notesListList = [[Note]]()
-                for selectedCandidate in tracks where selectedCandidate.selected {
-                    var openNotes = [String: UInt32]()
-                    var currentTick = UInt32(0)
+                var notesListList = [[Song.Note]]()
+                var songDuration = 0.0 as Float
+                
+                if let selectedMidiFile {
+                    var bpm = 120.0
                     
-                    var notesList = [Note]()
-                    
-                    for fileEvent in selectedCandidate.track.events {
-                        let event = fileEvent.event()
-                        currentTick += fileEvent.delta.ticksValue(using: .musical(ticksPerQuarterNote: 100))
-                        
-                        switch(event) {
-                        case let .noteOn(event):
-                            if event.velocity.unitIntervalValue == 0.0 {
-                                if let start = openNotes[event.note.stringValue()] {
-                                    notesList.append(
-                                        convertEventToNode(note: event.note, start: start, currentTick: currentTick)
-                                    )
-                                }
-                                break;
-                            }
-                            
-                            openNotes[event.note.stringValue()] = currentTick;
-                        case let .noteOff(event):
-                            if let start = openNotes[event.note.stringValue()] {
-                                notesList.append(
-                                    convertEventToNode(note: event.note, start: start, currentTick: currentTick)
-                                )
-                            }
-                            break
-                            
-                        default:
+                    for fileEvent in selectedMidiFile.tracks[0].events {
+                        if case .tempo(_, let event) = fileEvent {
+                            bpm = event.bpmEncoded
                             break
                         }
                     }
                     
-                    notesListList.append(notesList)
+                    let secondsPerTick: Float = {switch(selectedMidiFile.timeBase) {
+                    case .musical(let ticksPerQuarterNote):
+                        return Float(60.0 / bpm / Double(ticksPerQuarterNote))
+                    case .timecode(let smpteFormat, let ticksPerFrame):
+                        // unhandled
+                        return 1000
+                    }}()
+                    
+                    for selectedCandidate in tracks where selectedCandidate.selected {
+                        var openNotes = [String: Float]()
+                        var currentTick = UInt32(0)
+                        
+                        var notesList = [Song.Note]()
+                        
+                        for fileEvent in selectedCandidate.track.events {
+                            let event = fileEvent.event()
+                            currentTick += fileEvent.delta.ticksValue(using: .musical(ticksPerQuarterNote: 1000))
+
+                            print(fileEvent)
+                            print()
+                            
+                            let noteEnd = Float(currentTick) * secondsPerTick
+                            
+                            songDuration = max(songDuration, noteEnd)
+                            
+                            switch(event) {
+                            case let .noteOn(event):
+                                if event.velocity.unitIntervalValue == 0.0 {
+                                    if let start = openNotes[event.note.stringValue()] {
+                                        notesList.append(
+                                            convertEventToNode(note: event.note, start: start, end: noteEnd)
+                                        )
+                                    }
+                                    break;
+                                }
+                                
+                                openNotes[event.note.stringValue()] = Float(currentTick) * secondsPerTick;
+                            case let .noteOff(event):
+                                if let start = openNotes[event.note.stringValue()] {
+                                    notesList.append(
+                                        convertEventToNode(note: event.note, start: start, end: noteEnd)
+                                    )
+                                }
+                                break
+                                
+                            default:
+                                break
+                            }
+                        }
+                        
+                        notesListList.append(notesList)
+                    }
+                    onProcess(Song(duration: songDuration, notes: notesListList))
                 }
-                onProcess(notesListList)
             }
         }
     }
