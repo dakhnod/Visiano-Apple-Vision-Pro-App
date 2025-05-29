@@ -26,7 +26,7 @@ struct PlayerView: View {
     @State private var sceneScale: Float = 1.0
     
     @State var noteIndicators = [ModelEntity]()
-    @State var sharpIndicators = [ModelEntity]()
+    @State var sharpIndicators = [Int: ModelEntity]()
     
     @State var playStart = 0.0
     @State var pausedTime = 0.0
@@ -107,17 +107,21 @@ struct PlayerView: View {
         return bar
     }		
     
-    @MainActor func generateBlackKey(xOffset: Float) -> Entity{
+    @MainActor func generateBlackKey(container: Entity, index: Int) {
         let mesh = MeshResource.generateBox(size: SIMD3(BLACK_KEY_WIDTH, 0.00, 0.06))
         let material = SimpleMaterial(color: .black, isMetallic: false)
         let key = ModelEntity(mesh: mesh, materials: [material])
+        
+        let xOffset = BLACK_KEY_START + (Float(index) * WHITE_KEY_WIDTH)
         key.transform.translation = [
             xOffset,
             0,
             -0.05
         ]
         
-        return key
+        container.addChild(key)
+        
+        sharpIndicators[index] = key
     }
     
     @MainActor func generateWhiteKey(container: Entity, index: Int) {
@@ -160,20 +164,10 @@ struct PlayerView: View {
                 
                 for index in 0..<WHITE_KEY_COUNT {
                     generateWhiteKey(container: keyboard, index: index)
-                }
-                
-                for offset in [0, 1, 3, 4, 5] {
-                    for index in 0..<7 {
-                        keyboard.addChild(
-                            generateBlackKey(xOffset: BLACK_KEY_START + (Float(index) * OCTAVE_WIDTH) + (Float(offset) * WHITE_KEY_WIDTH))
-                        )
+                    
+                    if (index < 48) && [0, 1, 3, 4, 5].contains(index % 7) {
+                        generateBlackKey(container: keyboard, index: index)
                     }
-                }
-                
-                for offset in [1] {
-                    keyboard.addChild(
-                        generateBlackKey(xOffset: Float(offset) * WHITE_KEY_WIDTH)
-                    )
                 }
                 
                 for (index, notes) in song.notes.enumerated() {
@@ -227,15 +221,30 @@ struct PlayerView: View {
                             if playedTime > (note.end - 0.05) {
                                 // note has passed
                                 trackPointers[trackIndex] += 1
-                                if !note.sharp {
+                                if note.sharp {
+                                    if var indicator = sharpIndicators[noteIndex - 2] {
+                                        if var model = indicator.model {
+                                            model.materials = [SimpleMaterial(color: .black, isMetallic: false)]
+                                            indicator.model = model
+                                        }
+                                    }
+                                     
+                                }else{
                                     noteIndicators[noteIndex].isEnabled = false
                                 }
                                 continue
                             }
+                            let color = HAND_COLORS[trackIndex % HAND_COLORS.count]
                             
                             // at this point we are inside the note
-                            if !note.sharp {
-                                let color = HAND_COLORS[trackIndex % HAND_COLORS.count]
+                            if note.sharp {
+                                if var indicator = sharpIndicators[noteIndex - 2]{
+                                    if var model = indicator.model {
+                                        model.materials = [SimpleMaterial(color: color, isMetallic: false)]
+                                        indicator.model = model
+                                    }
+                                }
+                            }else{
                                 if var model = noteIndicators[noteIndex].model {
                                     model.materials = [SimpleMaterial(color: color, isMetallic: false)]
                                     noteIndicators[noteIndex].model = model
