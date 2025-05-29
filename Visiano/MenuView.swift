@@ -15,6 +15,8 @@ struct MenuView: View {
     @State private var tracks: [TrackCandidate] = []
     @State private var selectedFileName = ""
     @State private var selectedMidiFile: MIDIFile?
+    @State private var errorMessage = ""
+    @State private var errorShown = false
         
     var onProcess: (Song) -> Void
     
@@ -40,6 +42,44 @@ struct MenuView: View {
                 
         return Song.Note(index: UInt8(startIndex + octaveIndex), sharp: note.isSharp, start: start, end: end, duration: duration)
     }
+    
+    func handleURL(url: URL) {
+        do {
+            selectedFileName = url.lastPathComponent
+            
+            tracks = []
+            
+            selectedMidiFile = try MIDIFile(midiFile: url)
+            
+            if let selectedMidiFile {
+                for trackIndex in 1..<selectedMidiFile.tracks.count {
+                    let track = selectedMidiFile.tracks[trackIndex]
+                    
+                    func getTrackName() -> String {
+                        for fileEvent in track.events {
+                            if let text = fileEvent.smfUnwrappedEvent.event as? MIDIKitSMF.MIDIFileEvent.Text {
+                                if text.textType == .trackOrSequenceName {
+                                    return text.text
+                                }
+                            }
+                        }
+                        
+                        return "Unknown track"
+                    }
+                    
+                    let name = getTrackName()
+                    tracks.append(TrackCandidate(
+                        index: tracks.count,
+                        name: name,
+                        selected: name.lowercased().contains("hand"),
+                        track: track
+                    ))
+                }
+            }
+        } catch {
+            print("Failed to load MIDI file:", error)
+        }
+    }
 
      var body: some View {
         Button("Pick MIDI File") {
@@ -48,45 +88,17 @@ struct MenuView: View {
         .sheet(isPresented: $showPicker) {
             DocumentPicker { urls in
                 if let url = urls.first {
-                    do {
-                        selectedFileName = url.lastPathComponent
-                        
-                        tracks = []
-                        
-                        selectedMidiFile = try MIDIFile(midiFile: url)
-                        
-                        if let selectedMidiFile {
-                            for trackIndex in 1..<selectedMidiFile.tracks.count {
-                                let track = selectedMidiFile.tracks[trackIndex]
-                                
-                                func getTrackName() -> String {
-                                    for fileEvent in track.events {
-                                        if let text = fileEvent.smfUnwrappedEvent.event as? MIDIKitSMF.MIDIFileEvent.Text {
-                                            if text.textType == .trackOrSequenceName {
-                                                return text.text
-                                            }
-                                        }
-                                    }
-                                    
-                                    return "Unknown track"
-                                }
-                                
-                                let name = getTrackName()
-                                tracks.append(TrackCandidate(
-                                    index: tracks.count,
-                                    name: name,
-                                    selected: name.lowercased().contains("hand"),
-                                    track: track
-                                ))
-                            }
-                        }
-                    } catch {
-                        print("Failed to load MIDI file:", error)
-                    }
+                    handleURL(url: url)
                 }
             }
         }
         
+        Button("Alle meine Äntchen") {
+            if let url = Bundle.main.url(forResource: "100055", withExtension: "mid") {
+                handleURL(url: url)
+            }
+        }
+         
         if !tracks.isEmpty {
             Text("Tracks in \(selectedFileName):")
                 .font(.headline)
@@ -95,7 +107,20 @@ struct MenuView: View {
                     Toggle(trackCandidate.name, isOn: $trackCandidate.selected)
                 }
             }
+            .alert(isPresented: $errorShown) {
+                Alert(
+                    title: Text("Error"),
+                    message: Text(errorMessage)
+                )
+            }
             Button("Start playing") {
+                let selectedTracksCount = tracks.count { track in track.selected }
+                if selectedTracksCount == 0 {
+                    errorMessage = "Please select at least one track"
+                    errorShown = true
+                    return
+                }
+                
                 var notesListList = [[Song.Note]]()
                 var songDuration = 0.0 as Float
                 
