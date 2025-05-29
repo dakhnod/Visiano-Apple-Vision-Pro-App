@@ -16,19 +16,27 @@ struct PlayerView: View {
     @State var buttonVisible = true
     @State private var displayLink: CADisplayLink?
     @State private var speed = 1.0
-    @State private var progress = 0.0 as Float
+    @State private var progress: Float
     @State private var angle = 45.0
     
     @State private var playing = false
+    @State private var dragged = false
     
     @State private var originalSize: Size3D?
     @State private var sceneScale: Float = 1.0
+    
+    @State var noteIndicators = [Entity]()
+    
+    @State var playStart = 0.0
+    @State var pausedTime = 0.0
     	
     let WHITE_KEY_WIDTH = 0.0235 as Float
+    let WHITE_KEY_LENGTH = 0.15 as Float
     let BLACK_KEY_WIDTH = 0.01 as Float
     let NOTEVIEW_Z_OFFSET = 0.025 as Float
     var KEYBOARD_START = 0 as Float
     let WHITE_KEY_COUNT = 52
+    let SONG_HEADROOM = 5 as Float
     
     let BLACK_KEY_START: Float
     let OCTAVE_WIDTH: Float
@@ -37,7 +45,11 @@ struct PlayerView: View {
     
     let METERS_PER_SECOND: Float = 0.05
     
+    var PROGRESS_MIN: Float
+    
     var song: Song
+    
+    var trackPointers = [Int]()
     
     var noteView = Entity()
     
@@ -49,6 +61,14 @@ struct PlayerView: View {
         KEYBOARD_WIDTH = Float(WHITE_KEY_COUNT) * WHITE_KEY_WIDTH // 1,222
         KEYBOARD_START = KEYBOARD_WIDTH / -2
         SONG_LENGTH_METERS = song.duration * METERS_PER_SECOND
+        
+        // always give 5 seconds of headroom
+        PROGRESS_MIN = -SONG_HEADROOM / song.duration
+        progress = PROGRESS_MIN
+        
+        for _ in song.notes {
+            trackPointers.append(0)
+        }
     }
     
     class AnimationController {
@@ -102,12 +122,23 @@ struct PlayerView: View {
         return key
     }
     
-    @MainActor func generateWhiteKey(index: Int) -> Entity {
-        let mesh = MeshResource.generateBox(size: SIMD3(0.004, 0.00, 0.15))
-        let material = SimpleMaterial(color: .black, isMetallic: false)	
+    @MainActor func generateWhiteKey(container: Entity, index: Int) {
+        let mesh = MeshResource.generateBox(size: SIMD3(0.004, 0.00, WHITE_KEY_LENGTH))
+        let material = SimpleMaterial(color: .black, isMetallic: false)
         let divider = ModelEntity(mesh: mesh, materials: [material])
         divider.position.x = Float(index) * WHITE_KEY_WIDTH
-        return divider
+        
+        container.addChild(divider)
+        
+        let indicatorMesh = MeshResource.generateBox(size: SIMD3(WHITE_KEY_WIDTH, 0.00, WHITE_KEY_LENGTH))
+        let indicatorMaterial = SimpleMaterial(color: .black, isMetallic: false)
+        let indicator = ModelEntity(mesh: indicatorMesh, materials: [indicatorMaterial])
+        
+        indicator.position.x = (Float(index) * WHITE_KEY_WIDTH) + (WHITE_KEY_WIDTH / 2)
+        indicator.isEnabled = false
+        container.addChild(indicator)
+        
+        noteIndicators.append(indicator)
     }
 
     var body: some View {
@@ -130,7 +161,7 @@ struct PlayerView: View {
                 keyboard.transform.translation = [KEYBOARD_START, 0, 0.1]
                 
                 for index in 0..<WHITE_KEY_COUNT {
-                    keyboard.addChild(generateWhiteKey(index: index))
+                    generateWhiteKey(container: keyboard, index: index)
                 }
                 
                 for offset in [0, 1, 3, 4, 5] {
@@ -156,16 +187,44 @@ struct PlayerView: View {
                 content.add(anchor)
                 
                 let controller = AnimationController { displayLink in
-                    guard playing else { return }
+                    if dragged {
+                        playStart = displayLink.targetTimestamp - (Double(song.duration) * Double(progress)) - Double(SONG_HEADROOM)
+                        return
+                    }
+                    guard playing else {
+                        if playStart != 0.0 {
+                            pausedTime = displayLink.targetTimestamp - playStart
+                            playStart = 0.0
+                        }
+                        return
+                    }
                     
-                    let delta = displayLink.targetTimestamp - displayLink.timestamp
+                    if playStart == 0.0 {
+                        playStart = displayLink.targetTimestamp
+                        if pausedTime != 0.0 {
+                            playStart -= pausedTime
+                        }
+                        return
+                    }
+                    
+                    let playedTime = displayLink.targetTimestamp - playStart - Double(SONG_HEADROOM)
                     
                     // TODO
-                    progress += Float(delta) / song.duration * Float(speed) * 1.5 // REMOVE THE LAST THING
+                    progress = Float(playedTime) / song.duration // 1.5 is a hotfix for the SIMULATOR
+                    
+                    for (index, track) in song.notes.enumerated() {
+                        for i in trackPointers[index]..<track.count {
+                            let note = track[i]
+                            
+                            
+                        }
+                    }
                     
                     if progress > 1.0 {
                         playing = false
-                        progress = 0.0
+                        progress = PROGRESS_MIN
+                        pausedTime = 0
+                        playStart = 0
                     }
                 }
                 
@@ -244,7 +303,9 @@ struct PlayerView: View {
                             .font(.headline)
                             .fixedSize(horizontal: true, vertical: true)
                         
-                        Slider(value: $progress, in: 0...1, step: 0.01)
+                        Slider(value: $progress, in: PROGRESS_MIN...1, step: 0.01) { editing in
+                            dragged = editing
+                        }
                             .frame(width: 600)
                     }
                     .padding(15)
