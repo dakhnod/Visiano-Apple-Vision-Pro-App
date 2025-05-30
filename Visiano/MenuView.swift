@@ -92,6 +92,8 @@ struct MenuView: View {
                 }
             }
         }
+         
+         Text("Sample songs:")
         
         Button("Alle meine Äntchen") {
             if let url = Bundle.main.url(forResource: "Aentchen", withExtension: "mid") {
