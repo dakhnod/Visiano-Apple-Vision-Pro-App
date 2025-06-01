@@ -177,6 +177,15 @@ struct PlayerView: View {
                 }
                 
                 let controller = AnimationController { displayLink in
+                    /*
+                    Here, is gets a bit confusing.
+                    Initially, I was using displayLink.targetTimestamp - displayLink.timestamp,
+                    which gave me the delta time between two frames.
+                    But guess what, in the sim this was not working, since that one is running with 60fps, unlinke the Vision (90 fps).
+                    Also, we need to do a bit of trickery in order to make dragging and speed changes properly work.
+                    In any case, I am sorry for whoever has to maintain this. Sorry to future me if applicable.
+                    */
+                                         
                     if dragged {
                         playStart = displayLink.targetTimestamp - (Double(song.duration) * Double(progress)) - Double(SONG_HEADROOM)
                         return
@@ -296,6 +305,9 @@ struct PlayerView: View {
             }
             .onAppear {
                 originalSize = geometry.size
+            }
+            .onDisappear() {
+                displayLink?.invalidate()
             }
             .onChange(of: geometry.size) { newSize in
                 if let originalSize {
