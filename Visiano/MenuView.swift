@@ -96,13 +96,7 @@ struct MenuView: View {
          Text("Sample songs:")
         
         Button("Alle meine Entchen") {
-            if let midiFolderURL = Bundle.main.url(forResource: "Alle_Meine_Entchen", withExtension: "mid", subdirectory: "MIDIs") {
-                print("File found")
-            } else {
-                print("File not found")
-            }
-            
-            if let url = Bundle.main.url(forResource: "MIDIs", withExtension: nil)?.appendingPathComponent("Alle_Meine_Entchen.mid") {
+            if let url = Bundle.main.url(forResource: "Alle_Meine_Entchen", withExtension: "mid", subdirectory: "MIDIs") {
                 handleURL(url: url)
             }
         }
