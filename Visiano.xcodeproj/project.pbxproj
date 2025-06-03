@@ -10,7 +10,8 @@
 		D72B21EE2DE5031B00B0CF55 /* MIDIKit in Frameworks */ = {isa = PBXBuildFile; productRef = D72B21ED2DE5031B00B0CF55 /* MIDIKit */; };
 		D72B21F02DE5031B00B0CF55 /* MIDIKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = D72B21EF2DE5031B00B0CF55 /* MIDIKitCore */; };
 		D72B21F22DE5031B00B0CF55 /* MIDIKitSMF in Frameworks */ = {isa = PBXBuildFile; productRef = D72B21F12DE5031B00B0CF55 /* MIDIKitSMF */; };
-		D77D1EC52DEC8F6A00E6D029 /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = D77D1EC42DEC8F6A00E6D029 /* RealityKitContent */; };
+		D778A9FE2DEF48420002A2E2 /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = D778A9FD2DEF48420002A2E2 /* RealityKitContent */; };
+		D778AAB12DEF654B0002A2E2 /* notes in Resources */ = {isa = PBXBuildFile; fileRef = D778AAB02DEF63570002A2E2 /* notes */; };
 		D77D1ECD2DEC929000E6D029 /* MIDIs in Resources */ = {isa = PBXBuildFile; fileRef = D77D1ECC2DEC927900E6D029 /* MIDIs */; };
 /* End PBXBuildFile section */
 
@@ -25,6 +26,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D778AAB02DEF63570002A2E2 /* notes */ = {isa = PBXFileReference; lastKnownFileType = folder; path = notes; sourceTree = "<group>"; };
 		D77D1ECC2DEC927900E6D029 /* MIDIs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = MIDIs; sourceTree = "<group>"; };
 		D7A7ED282DE3954400B71F30 /* Visiano.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Visiano.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7A7ED2C2DE3954400B71F30 /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
@@ -64,7 +66,7 @@
 			files = (
 				D72B21F02DE5031B00B0CF55 /* MIDIKitCore in Frameworks */,
 				D72B21EE2DE5031B00B0CF55 /* MIDIKit in Frameworks */,
-				D77D1EC52DEC8F6A00E6D029 /* RealityKitContent in Frameworks */,
+				D778A9FE2DEF48420002A2E2 /* RealityKitContent in Frameworks */,
 				D72B21F22DE5031B00B0CF55 /* MIDIKitSMF in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -89,6 +91,7 @@
 		D7A7ED1F2DE3954400B71F30 = {
 			isa = PBXGroup;
 			children = (
+				D778AAB02DEF63570002A2E2 /* notes */,
 				D77D1ECC2DEC927900E6D029 /* MIDIs */,
 				D7A7ED2A2DE3954400B71F30 /* Visiano */,
 				D7A7ED2B2DE3954400B71F30 /* Packages */,
@@ -138,7 +141,7 @@
 				D72B21ED2DE5031B00B0CF55 /* MIDIKit */,
 				D72B21EF2DE5031B00B0CF55 /* MIDIKitCore */,
 				D72B21F12DE5031B00B0CF55 /* MIDIKitSMF */,
-				D77D1EC42DEC8F6A00E6D029 /* RealityKitContent */,
+				D778A9FD2DEF48420002A2E2 /* RealityKitContent */,
 			);
 			productName = Visiano;
 			productReference = D7A7ED282DE3954400B71F30 /* Visiano.app */;
@@ -214,6 +217,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D778AAB12DEF654B0002A2E2 /* notes in Resources */,
 				D77D1ECD2DEC929000E6D029 /* MIDIs in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -527,7 +531,7 @@
 			package = D72B21EC2DE5031B00B0CF55 /* XCRemoteSwiftPackageReference "MIDIKit" */;
 			productName = MIDIKitSMF;
 		};
-		D77D1EC42DEC8F6A00E6D029 /* RealityKitContent */ = {
+		D778A9FD2DEF48420002A2E2 /* RealityKitContent */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RealityKitContent;
 		};

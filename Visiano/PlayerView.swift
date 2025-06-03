@@ -29,6 +29,9 @@ struct PlayerView: View {
     @State var collisionEntities = [Entity]()
     @State var sharpIndicators = [Int: ModelEntity]()
     
+    @State var regularNoteFiles = [AudioFileResource]()
+    @State var sharpNoteFiles = [Int: AudioFileResource]()
+    
     @State var playStart = 0.0
     @State var pausedTime = 0.0
     	
@@ -128,6 +131,23 @@ struct PlayerView: View {
         container.addChild(key)
         
         sharpIndicators[index] = key
+
+        let noteMapping = ["c", "d", "e", "f", "g", "a", "b"]
+        let noteLetter = noteMapping[(index) % 7]
+        let octave = (index + 7) / 7
+        print("loading", noteLetter, octave)
+        let noteResourceURL = Bundle.main.url(forResource: "\(octave)-\(noteLetter)s", withExtension: "wav", subdirectory: "notes")
+        if let noteResourceURL {
+            do {
+                sharpNoteFiles[index] = (
+                    try AudioFileResource.load(contentsOf: noteResourceURL)
+                )
+            } catch {
+                print("error loading note")
+            }
+        }else {
+            print("missing note")
+        }
     }
     
     @MainActor func generateWhiteKey(container: Entity, index: Int) {
@@ -151,10 +171,27 @@ struct PlayerView: View {
         collisionEntity.position.x = (Float(index) * WHITE_KEY_WIDTH) + (WHITE_KEY_WIDTH / 2)
         collisionEntity.components.set(InputTargetComponent(allowedInputTypes: .all))
         collisionEntity.components.set(CollisionComponent(shapes: [ShapeResource.generateBox(size: indicatorSize)], isStatic: true))
+        
         container.addChild(collisionEntity)
         collisionEntities.append(collisionEntity)
         
         noteIndicators.append(indicator)
+        
+        let noteMapping = ["c", "d", "e", "f", "g", "a", "b"]
+        let noteLetter = noteMapping[(index + 5) % 7]
+        let octave = (index + 5) / 7
+        let noteResourceURL = Bundle.main.url(forResource: "\(octave)-\(noteLetter)", withExtension: "wav", subdirectory: "notes")
+        if let noteResourceURL {
+            do {
+                regularNoteFiles.append(
+                    try AudioFileResource.load(contentsOf: noteResourceURL)
+                )
+            } catch {
+                print("error loading note")
+            }
+        }else {
+            print("missing note")
+        }
     }
 
     var body: some View {
@@ -315,6 +352,9 @@ struct PlayerView: View {
                         continue
                     }
                     print(index + 2, true)
+                    if let file = sharpNoteFiles[index] {
+                        indicator.playAudio(file)
+                    }
                     return
                 }
                 
@@ -323,6 +363,7 @@ struct PlayerView: View {
                         continue
                     }
                     print(index, false)
+                    indicator.playAudio(regularNoteFiles[index])
                     return
                 }
             })
