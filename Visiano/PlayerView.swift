@@ -26,6 +26,7 @@ struct PlayerView: View {
     @State private var sceneScale: Float = 1.0
     
     @State var noteIndicators = [ModelEntity]()
+    @State var collisionEntities = [Entity]()
     @State var sharpIndicators = [Int: ModelEntity]()
     
     @State var playStart = 0.0
@@ -109,19 +110,20 @@ struct PlayerView: View {
     }		
     
     @MainActor func generateBlackKey(container: Entity, index: Int) {
-        let mesh = MeshResource.generateBox(size: SIMD3(BLACK_KEY_WIDTH, 0.00, 0.06))
+        let meshSize = SIMD3(BLACK_KEY_WIDTH, 0.00, 0.06)
+        let mesh = MeshResource.generateBox(size: meshSize)
         let material = SimpleMaterial(color: .black, isMetallic: false)
         let key = ModelEntity(mesh: mesh, materials: [material])
         
         let xOffset = BLACK_KEY_START + (Float(index) * WHITE_KEY_WIDTH)
         key.transform.translation = [
             xOffset,
-            0,
+            0.001,
             -0.05
         ]
         
-        key.components.set(InputTargetComponent(allowedInputTypes: .indirect))
-        key.components.set(CollisionComponent(shapes: [ShapeResource.generateBox(size: SIMD3<Float>(repeating: 0.5))], isStatic: true))
+        key.components.set(InputTargetComponent(allowedInputTypes: .all))
+        key.components.set(CollisionComponent(shapes: [ShapeResource.generateBox(size: meshSize)], isStatic: true))
         
         container.addChild(key)
         
@@ -136,15 +138,21 @@ struct PlayerView: View {
         
         container.addChild(divider)
         
-        let indicatorMesh = MeshResource.generateBox(size: SIMD3(WHITE_KEY_WIDTH, 0.00, WHITE_KEY_LENGTH))
+        let indicatorSize = SIMD3(WHITE_KEY_WIDTH, 0.00, WHITE_KEY_LENGTH)
+        let indicatorMesh = MeshResource.generateBox(size: indicatorSize)
         let indicatorMaterial = SimpleMaterial(color: .black, isMetallic: false)
         let indicator = ModelEntity(mesh: indicatorMesh, materials: [indicatorMaterial])
-        
-        indicator.generateCollisionShapes(recursive: true)
         
         indicator.position.x = (Float(index) * WHITE_KEY_WIDTH) + (WHITE_KEY_WIDTH / 2)
         indicator.isEnabled = false
         container.addChild(indicator)
+        
+        let collisionEntity = Entity()
+        collisionEntity.position.x = (Float(index) * WHITE_KEY_WIDTH) + (WHITE_KEY_WIDTH / 2)
+        collisionEntity.components.set(InputTargetComponent(allowedInputTypes: .all))
+        collisionEntity.components.set(CollisionComponent(shapes: [ShapeResource.generateBox(size: indicatorSize)], isStatic: true))
+        container.addChild(collisionEntity)
+        collisionEntities.append(collisionEntity)
         
         noteIndicators.append(indicator)
     }
@@ -162,11 +170,11 @@ struct PlayerView: View {
                 keyboard.transform.translation = [KEYBOARD_START, 0, 0.1]
                 
                 for index in 0..<WHITE_KEY_COUNT {
-                    generateWhiteKey(container: keyboard, index: index)
-                    
                     if (index < 48) && [0, 1, 3, 4, 5].contains(index % 7) {
                         generateBlackKey(container: keyboard, index: index)
                     }
+                    
+                    generateWhiteKey(container: keyboard, index: index)
                 }
                 
                 for (index, notes) in song.notes.enumerated() {
@@ -302,7 +310,21 @@ struct PlayerView: View {
                 
             }
             .gesture(SpatialTapGesture().targetedToAnyEntity().onEnded { event in
-                print(event.entity)
+                for (index, indicator) in sharpIndicators {
+                    if indicator != event.entity {
+                        continue
+                    }
+                    print(index + 2, true)
+                    return
+                }
+                
+                for (index, indicator) in collisionEntities.enumerated() {
+                    if indicator != event.entity {
+                        continue
+                    }
+                    print(index, false)
+                    return
+                }
             })
             .toolbar {
                 ToolbarItemGroup(placement: .bottomOrnament) {

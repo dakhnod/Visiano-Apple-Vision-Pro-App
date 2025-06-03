@@ -83,7 +83,7 @@ struct MenuView: View {
                 }
                 
                 if preselectedCount == 0 {
-                    if var firstTrackIndex = tracks.indices.first {
+                    if let firstTrackIndex = tracks.indices.first {
                         tracks	[firstTrackIndex].selected = true
                     }
                 }
