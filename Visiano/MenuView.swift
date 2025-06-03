@@ -52,6 +52,8 @@ struct MenuView: View {
             selectedMidiFile = try MIDIFile(midiFile: url)
             
             if let selectedMidiFile {
+                var preselectedCount = 0
+                
                 for trackIndex in 1..<selectedMidiFile.tracks.count {
                     let track = selectedMidiFile.tracks[trackIndex]
                     
@@ -68,12 +70,22 @@ struct MenuView: View {
                     }
                     
                     let name = getTrackName()
+                    let preSelected = name.lowercased().contains("hand")
+                    if preSelected {
+                        preselectedCount += 1
+                    }
                     tracks.append(TrackCandidate(
                         index: tracks.count,
                         name: name,
-                        selected: name.lowercased().contains("hand"),
+                        selected: preSelected,
                         track: track
                     ))
+                }
+                
+                if preselectedCount == 0 {
+                    if var firstTrackIndex = tracks.indices.first {
+                        tracks	[firstTrackIndex].selected = true
+                    }
                 }
             }
         } catch {
