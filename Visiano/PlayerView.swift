@@ -211,9 +211,9 @@ struct PlayerView: View {
                         return
                     }
                     
-                    let playedTime = Float(displayLink.targetTimestamp - playStart - Double(SONG_HEADROOM))
+                    let playedTime = Float(displayLink.targetTimestamp - playStart - Double(SONG_HEADROOM))  * Float(speed)
                     
-                    progress = playedTime / song.duration
+                    progress = (playedTime / song.duration)
                     
                     for (trackIndex, track) in song.notes.enumerated() {
                         for i in trackPointers[trackIndex]..<track.count {
