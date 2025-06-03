@@ -120,6 +120,9 @@ struct PlayerView: View {
             -0.05
         ]
         
+        key.components.set(InputTargetComponent(allowedInputTypes: .indirect))
+        key.components.set(CollisionComponent(shapes: [ShapeResource.generateBox(size: SIMD3<Float>(repeating: 0.5))], isStatic: true))
+        
         container.addChild(key)
         
         sharpIndicators[index] = key
@@ -136,6 +139,8 @@ struct PlayerView: View {
         let indicatorMesh = MeshResource.generateBox(size: SIMD3(WHITE_KEY_WIDTH, 0.00, WHITE_KEY_LENGTH))
         let indicatorMaterial = SimpleMaterial(color: .black, isMetallic: false)
         let indicator = ModelEntity(mesh: indicatorMesh, materials: [indicatorMaterial])
+        
+        indicator.generateCollisionShapes(recursive: true)
         
         indicator.position.x = (Float(index) * WHITE_KEY_WIDTH) + (WHITE_KEY_WIDTH / 2)
         indicator.isEnabled = false
@@ -296,8 +301,8 @@ struct PlayerView: View {
                 ]
                 
             }
-            .gesture(TapGesture().targetedToAnyEntity().onEnded { _ in
-                enlarge.toggle()
+            .gesture(SpatialTapGesture().targetedToAnyEntity().onEnded { event in
+                print(event.entity)
             })
             .toolbar {
                 ToolbarItemGroup(placement: .bottomOrnament) {
