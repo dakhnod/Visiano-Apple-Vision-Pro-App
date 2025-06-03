@@ -10,7 +10,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 import UIKit
 
+// This whole class is a brighe to some legacy Apple UI framework
 struct DocumentPicker: UIViewControllerRepresentable {
+    // callback for then the user has selected a file
     var onDocumentsPicked: ([URL]) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -18,7 +20,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
     }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let types = [UTType.midi] // You can customize this
+        let types = [UTType.midi]
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: false)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false

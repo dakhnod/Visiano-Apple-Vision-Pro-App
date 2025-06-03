@@ -21,6 +21,11 @@ struct VisianoApp: App {
         }
         .windowStyle(.plain)
         
+        // This is crazy:
+        // Apparently, when Song changes, this code gets involved
+        // and opens a new PlayerView
+        // ...
+        // For me, as a mostly embedded engineer, this is crazy.
         WindowGroup(for: Song.self) { $song in
             if let song {
                 PlayerView(song: song)
