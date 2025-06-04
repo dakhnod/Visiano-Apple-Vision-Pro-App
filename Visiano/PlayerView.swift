@@ -40,6 +40,8 @@ struct PlayerView: View {
     @State var playStart = 0.0
     // The timestamp at which playback was paused
     @State var pausedTime = 0.0
+    
+    @State private var noteSounds = true
     	
     let WHITE_KEY_WIDTH = 0.0235 as Float
     let WHITE_KEY_LENGTH = 0.15 as Float
@@ -415,26 +417,42 @@ struct PlayerView: View {
                 
             }
             .gesture(SpatialTapGesture().targetedToAnyEntity().onEnded { event in
-                // Here we are trying to figure out which note (Entity) was pressed
-                // First white keys (more likely) and then black.
-                for (index, indicator) in sharpIndicators {
-                    if indicator != event.entity {
-                        continue
-                    }
-                    print(index + 2, true)
-                    if let file = sharpNoteFiles[index] {
-                        indicator.playAudio(file)
-                    }
+                if !noteSounds {
                     return
                 }
                 
-                for (index, indicator) in collisionEntities.enumerated() {
-                    if indicator != event.entity {
-                        continue
+                func getPlayedNoteIndex () -> (Int?, Bool) {
+                    // Here we are trying to figure out which note (Entity) was pressed
+                    // First white keys (more likely) and then black.
+                    for (index, indicator) in sharpIndicators {
+                        if indicator != event.entity {
+                            continue
+                        }
+                        return (index, true)
                     }
-                    print(index, false)
-                    indicator.playAudio(regularNoteFiles[index])
-                    return
+                    
+                    for (index, indicator) in collisionEntities.enumerated() {
+                        if indicator != event.entity {
+                            continue
+                        }
+                        return (index, false)
+                    }
+                    
+                    return (nil, false)
+                }
+                
+                let (playedIndex, sharp) = getPlayedNoteIndex()
+                
+                if noteSounds {
+                    if let playedIndex {
+                        if sharp {
+                            if let file = sharpNoteFiles[playedIndex] {
+                                event.entity.playAudio(file)
+                            }
+                        }else {
+                            event.entity.playAudio(regularNoteFiles[playedIndex])
+                        }
+                    }
                 }
             })
             .onAppear {
@@ -502,6 +520,13 @@ struct PlayerView: View {
                             }
                         }
                             .frame(width: 600)
+                    }
+                    .padding(15)
+                    .background(Color.gray.opacity(0.45))
+                    .cornerRadius(40)
+                    
+                    Toggle(isOn: $noteSounds) {
+                        Text("Sounds")
                     }
                     .padding(15)
                     .background(Color.gray.opacity(0.45))
