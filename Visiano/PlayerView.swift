@@ -42,6 +42,9 @@ struct PlayerView: View {
     @State var pausedTime = 0.0
     
     @State private var noteSounds = true
+    
+    // track what notes are currently sounding in the song
+    @State private var currentNotes = [Song.Note]()
     	
     let WHITE_KEY_WIDTH = 0.0235 as Float
     let WHITE_KEY_LENGTH = 0.15 as Float
@@ -58,6 +61,15 @@ struct PlayerView: View {
     let SONG_LENGTH_METERS: Float
     
     let METERS_PER_SECOND: Float = 0.05
+    
+    // give the user a perfect score if he hits the note within 100ms +/-
+    let PERFECT_HIT_DELTA: Float = 0.1
+    
+    // give the user nothing if he hits the note later/or earlier than 400ms
+    let WORST_HIT_DELTA: Float = 0.4
+    
+    @State private var averageAccuracy: Float = 0.0
+    @State private var playedNoteCount = 0
     
     // stores the minimum progress like -0.05 for 5%
     // is needed, since there is 5 seconds of headroom before the first note
@@ -133,7 +145,7 @@ struct PlayerView: View {
         }
         
         return bar
-    }		
+    }
     
     @MainActor func generateBlackKey(container: Entity, index: Int) {
         let meshSize = SIMD3(BLACK_KEY_WIDTH, 0.00, 0.06)
@@ -157,8 +169,10 @@ struct PlayerView: View {
         sharpIndicators[index] = key
 
         let noteMapping = ["c", "d", "e", "f", "g", "a", "b"]
+        // get the played note name in order to resolve to a filename
         let noteLetter = noteMapping[(index) % 7]
         let octave = (index + 7) / 7
+        // get the proper audio filename
         let noteResourceURL = Bundle.main.url(forResource: "\(octave)-\(noteLetter)s", withExtension: "wav", subdirectory: "notes")
         if let noteResourceURL {
             do {
@@ -307,6 +321,8 @@ struct PlayerView: View {
 
                     This way, our pool of potential notes shrinks with every played note.
                     */
+                    
+                    currentNotes = []
 
                     // iterate over all tracks (left hand, right hand...)
                     for (trackIndex, track) in song.notes.enumerated() {
@@ -343,7 +359,11 @@ struct PlayerView: View {
                             let color = HAND_COLORS[trackIndex % HAND_COLORS.count]
                             
                             // at this point we are inside the note (in the time dimension, start <= now <= end)
-                            // and we turn on the indicator
+                            
+                            // add this note to all current notes
+                            currentNotes.append(note)
+                            
+                            //  turn on the indicator
                             if note.sharp {
                                 if let indicator = sharpIndicators[noteIndex - 2]{
                                     if var model = indicator.model {
@@ -443,15 +463,51 @@ struct PlayerView: View {
                 
                 let (playedIndex, sharp) = getPlayedNoteIndex()
                 
-                if noteSounds {
-                    if let playedIndex {
-                        if sharp {
-                            if let file = sharpNoteFiles[playedIndex] {
-                                event.entity.playAudio(file)
-                            }
-                        }else {
-                            event.entity.playAudio(regularNoteFiles[playedIndex])
+                // check if collision was with a key at all
+                guard let playedIndex else { return }
+                
+                // how far we have progressed in the song
+                let currentTimestamp = progress * song.duration
+                
+                for currentNote in currentNotes {
+                    if (playedIndex == currentNote.index) && (sharp == currentNote.sharp) {
+                        // yay! We hit the key while the note is playing.
+                        // Now we have to check how acurately we hit the note
+                        let startDelta = currentTimestamp - currentNote.start
+                        
+                        let hitTimeRange = WORST_HIT_DELTA - PERFECT_HIT_DELTA
+                        
+                        var accuracy: Float = 1.0
+                        
+                        if startDelta <= PERFECT_HIT_DELTA {
+                            // perfect hit
+                        } else if(startDelta > WORST_HIT_DELTA) {
+                            // hit is too bad
+                            accuracy = 0.0
+                        } else {
+                            // subtract the perfect hit time
+                            // we give the user 100ms +/- to hit in order to allow a perfect score
+                            let realStartDelta = abs(startDelta) - PERFECT_HIT_DELTA
+                            
+                            accuracy = realStartDelta / hitTimeRange
                         }
+                        
+                        // update the average accuracy
+                        // credits go to chatGPT for this formula (cumulative moving average)
+                        averageAccuracy = ((Float(playedNoteCount) * averageAccuracy) + accuracy)
+                                        / Float(playedNoteCount + 1)
+                        
+                        playedNoteCount += 1
+                    }
+                }
+                
+                if noteSounds {
+                    if sharp {
+                        if let file = sharpNoteFiles[playedIndex] {
+                            event.entity.playAudio(file)
+                        }
+                    }else {
+                        event.entity.playAudio(regularNoteFiles[playedIndex])
                     }
                 }
             })
@@ -482,9 +538,9 @@ struct PlayerView: View {
                         
                         Slider(value: $speed, in: 0...3, step: 0.01)
                     }
-                    .padding(15)
-                    .background(Color.gray.opacity(0.45))
-                    .cornerRadius(40)
+                        .padding(15)
+                        .background(Color.gray.opacity(0.45))
+                        .cornerRadius(40)
                     
                     HStack {
                         Text("Angle")
@@ -492,13 +548,16 @@ struct PlayerView: View {
                         
                         Slider(value: $angle, in: 1...90)
                     }
-                    .padding(15)
-                    .background(Color.gray.opacity(0.45))
-                    .cornerRadius(40)
+                        .padding(15)
+                        .background(Color.gray.opacity(0.45))
+                        .cornerRadius(40)
                     
-                    if playing {
-                        Button("Pause") {
-                            playing = false
+                    Button(playing ? "Pause" : "Play") {
+                        playing = !playing
+                        
+                        if playing {
+                            playedNoteCount = 0
+                            averageAccuracy = 0
                         }
                     }
                     
@@ -521,16 +580,21 @@ struct PlayerView: View {
                         }
                             .frame(width: 600)
                     }
-                    .padding(15)
-                    .background(Color.gray.opacity(0.45))
-                    .cornerRadius(40)
+                        .padding(15)
+                        .background(Color.gray.opacity(0.45))
+                        .cornerRadius(40)
+                    
+                    Text("Accuracy: \(Int(averageAccuracy * 100))%")
+                        .padding(15)
+                        .background(Color.gray.opacity(0.45))
+                        .cornerRadius(40)
                     
                     Toggle(isOn: $noteSounds) {
                         Text("Sounds")
                     }
-                    .padding(15)
-                    .background(Color.gray.opacity(0.45))
-                    .cornerRadius(40)
+                        .padding(15)
+                        .background(Color.gray.opacity(0.45))
+                        .cornerRadius(40)
                 }
             }
             .ornament(attachmentAnchor: .scene(.bottomFront)) {
@@ -538,6 +602,8 @@ struct PlayerView: View {
                     // move Play button out of the way
                     // when playback is active
                     Button("Play") {
+                        playedNoteCount = 0
+                        averageAccuracy = 0
                         playing = true
                     }
                 }
