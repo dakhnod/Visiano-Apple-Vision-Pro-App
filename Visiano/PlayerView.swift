@@ -527,7 +527,7 @@ struct PlayerView: View {
             }
             
             .ornament(
-                attachmentAnchor: .scene(.topFront),
+                attachmentAnchor: .scene(.topBack),
                 contentAlignment: .center
             ) {
                 HStack (spacing: 12) {
