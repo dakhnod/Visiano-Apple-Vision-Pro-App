@@ -42,7 +42,8 @@ struct MenuView: View {
         case .B: 6
         }
                 
-        return Song.Note(index: UInt8(octaveIndex + noteIndex), sharp: note.isSharp, start: start, end: end, duration: duration)
+        // +2 to compensate for two stray white keys on the left
+        return Song.Note(index: UInt8(octaveIndex + noteIndex + 2), sharp: note.isSharp, start: start, end: end, duration: duration)
     }
     
     func handleURL(url: URL) {

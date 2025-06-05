@@ -135,7 +135,7 @@ struct PlayerView: View {
         
         // move bar up/down dependant on start (which is in seconds)
         bar.transform.translation = [
-            (Float(note.index) * WHITE_KEY_WIDTH) + (2 * WHITE_KEY_WIDTH),
+            (Float(note.index) * WHITE_KEY_WIDTH),
             (Float(note.start) * METERS_PER_SECOND) + (length / 2),
             0
         ]
@@ -166,7 +166,8 @@ struct PlayerView: View {
         
         container.addChild(key)
         
-        sharpIndicators[index] = key
+        // +2 for compensating for black key offset
+        sharpIndicators[index + 2] = key
 
         let noteMapping = ["c", "d", "e", "f", "g", "a", "b"]
         // get the played note name in order to resolve to a filename
@@ -177,7 +178,7 @@ struct PlayerView: View {
         if let noteResourceURL {
             do {
                 // store note audio data for later playback
-                sharpNoteFiles[index] = (
+                sharpNoteFiles[index + 2] = (
                     try AudioFileResource.load(contentsOf: noteResourceURL)
                 )
             } catch {
@@ -329,7 +330,7 @@ struct PlayerView: View {
                         // iterate from the last fully played note up to the end of the track
                         for i in trackPointers[trackIndex]..<track.count {
                             let note = track[i]
-                            let noteIndex = Int(note.index + 2)
+                            let noteIndex = Int(note.index)
                             
                             if playedTime < note.start {
                                 // have not reached the note yet
@@ -344,7 +345,7 @@ struct PlayerView: View {
 
                                 // turn off the indicator for this note
                                 if note.sharp {
-                                    if let indicator = sharpIndicators[noteIndex - 2] {
+                                    if let indicator = sharpIndicators[noteIndex] {
                                         if var model = indicator.model {
                                             model.materials = [SimpleMaterial(color: .black, isMetallic: false)]
                                             indicator.model = model
@@ -365,7 +366,7 @@ struct PlayerView: View {
                             
                             //  turn on the indicator
                             if note.sharp {
-                                if let indicator = sharpIndicators[noteIndex - 2]{
+                                if let indicator = sharpIndicators[noteIndex]{
                                     if var model = indicator.model {
                                         model.materials = [SimpleMaterial(color: color, isMetallic: false)]
                                         indicator.model = model
@@ -437,10 +438,6 @@ struct PlayerView: View {
                 
             }
             .gesture(SpatialTapGesture().targetedToAnyEntity().onEnded { event in
-                if !noteSounds {
-                    return
-                }
-                
                 func getPlayedNoteIndex () -> (Int?, Bool) {
                     // Here we are trying to figure out which note (Entity) was pressed
                     // First white keys (more likely) and then black.
@@ -466,11 +463,13 @@ struct PlayerView: View {
                 // check if collision was with a key at all
                 guard let playedIndex else { return }
                 
+                print(playedIndex, sharp)
+                
                 // how far we have progressed in the song
                 let currentTimestamp = progress * song.duration
                 
                 for currentNote in currentNotes {
-                    if (playedIndex == currentNote.index) && (sharp == currentNote.sharp) {
+                    if (playedIndex == (currentNote.index)) && (sharp == currentNote.sharp) {
                         // yay! We hit the key while the note is playing.
                         // Now we have to check how acurately we hit the note
                         let startDelta = currentTimestamp - currentNote.start
@@ -489,7 +488,7 @@ struct PlayerView: View {
                             // we give the user 100ms +/- to hit in order to allow a perfect score
                             let realStartDelta = abs(startDelta) - PERFECT_HIT_DELTA
                             
-                            accuracy = realStartDelta / hitTimeRange
+                            accuracy = 1 - (realStartDelta / hitTimeRange)
                         }
                         
                         // update the average accuracy
