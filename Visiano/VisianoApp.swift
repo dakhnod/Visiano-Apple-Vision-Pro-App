@@ -11,34 +11,36 @@ import SwiftUI
 struct VisianoApp: App {
     @State private var appModel = AppModel()
     
-    @State private var playerOpen = false
-    
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup {
-            if !playerOpen {
-                MenuView() { notes in
-                    playerOpen = true;
-                    openWindow(value: notes)
-                }
+        /*
+         You might ask yourself why we don't hide the window here, once the player is open.
+         Turns out, it's not as easy.
+         I tried:
+         - Wrapping MenuView() in `if !playerOpen`
+         - conditionally setting opacity
+         - dismissing the WindowGroup
+         
+         Dismissing just didn't have any effect, while the other options somehow broke the animations
+         inside of PlayerView.
+         
+         So for now, the window stays.
+         */
+        WindowGroup("Song selection") {
+            MenuView() { notes in
+                openWindow(value: notes)
             }
         }
         .windowStyle(.plain)
         
-        // This is crazy:
-        // Apparently, when Song changes, this code gets involved
-        // and opens a new PlayerView
-        // ...
-        // For me, as a mostly embedded engineer, this is crazy.
-        WindowGroup(for: Song.self) { $song in
+        // Whenever we call openWindow, passing a Song, this WindowGroup gets involved and opens a new PlayerView.
+        // Through this mechanism there can only ever be one single Window for a particular song.
+        WindowGroup("Piano player", for: Song.self) { $song in
             if let song {
                 PlayerView(song: song)
                     .environment(appModel)
                     .volumeBaseplateVisibility(.visible)
-                    .onDisappear() {
-                        playerOpen = false
-                    }
                     // .frame(depth: 0.6)
                     // .frame(width: 1.3, height: 0.6)
             }
@@ -47,19 +49,5 @@ struct VisianoApp: App {
         .defaultSize(width: 130, height: 60, depth: 60, in: .centimeters)
         .volumeWorldAlignment(.gravityAligned)
         .windowResizability(.contentSize)
-
-        /*
-        ImmersiveSpace(id: appModel.immersiveSpaceID) {
-            ImmersiveView()
-                .environment(appModel)
-                .onAppear {
-                    appModel.immersiveSpaceState = .open
-                }
-                .onDisappear {
-                    appModel.immersiveSpaceState = .closed
-                }
-        }
-        .immersionStyle(selection: .constant(.mixed), in: .mixed)
-         */
     }
 }
