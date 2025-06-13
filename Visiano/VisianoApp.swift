@@ -25,6 +25,9 @@ struct VisianoApp: App {
          Dismissing just didn't have any effect, while the other options somehow broke the animations
          inside of PlayerView.
          
+         In any case, I was only able to hide the content of the WindowGroup, not the WindowGroup itself.
+         This caused the basePlate and controls to remain.
+         
          So for now, the window stays.
          */
         WindowGroup("Song selection") {
