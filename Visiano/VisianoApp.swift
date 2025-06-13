@@ -11,12 +11,17 @@ import SwiftUI
 struct VisianoApp: App {
     @State private var appModel = AppModel()
     
+    @State private var playerOpen = false
+    
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
         WindowGroup {
-            MenuView() { notes in
-                openWindow(value: notes)
+            if !playerOpen {
+                MenuView() { notes in
+                    playerOpen = true;
+                    openWindow(value: notes)
+                }
             }
         }
         .windowStyle(.plain)
@@ -31,6 +36,9 @@ struct VisianoApp: App {
                 PlayerView(song: song)
                     .environment(appModel)
                     .volumeBaseplateVisibility(.visible)
+                    .onDisappear() {
+                        playerOpen = false
+                    }
                     // .frame(depth: 0.6)
                     // .frame(width: 1.3, height: 0.6)
             }

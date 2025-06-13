@@ -93,7 +93,7 @@ struct MenuView: View {
                 // Fallback for when no tracks could be identified to be playable by hand
                 if preselectedCount == 0 {
                     if let firstTrackIndex = tracks.indices.first {
-                        tracks	[firstTrackIndex].selected = true
+                        tracks[firstTrackIndex].selected = true
                     }
                 }
             }
