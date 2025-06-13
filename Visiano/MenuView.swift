@@ -103,139 +103,148 @@ struct MenuView: View {
     }
 
      var body: some View {
-        Button("Pick MIDI File") {
-            showPicker = true
-        }
-        .sheet(isPresented: $showPicker) {
-            DocumentPicker { urls in
-                if let url = urls.first {
-                    handleURL(url: url)
-                }
-            }
-        }
-         
-        Text("Sample songs:")
-        
-        Button("Alle meine Entchen") {
-            if let url = Bundle.main.url(forResource: "Alle_Meine_Entchen", withExtension: "mid", subdirectory: "MIDIs") {
-                handleURL(url: url)
-            }
-        }
-         
-        // This gets updated automatically when "tracks" is modified
-        // which happens then the user selects a new MIDI file
-        if !tracks.isEmpty {
-            Text("Tracks in \(selectedFileName):")
-                .font(.headline)
-
-            // Here, we allow the user to select
-            // which tracks he wants to be included in the player
-            VStack {
-                ForEach($tracks, id: \.index) { $trackCandidate in
-                    Toggle(trackCandidate.name, isOn: $trackCandidate.selected)
-                }
-            }
-            // again, this gets shown automatically once "errorShown" changes
-            .alert(isPresented: $errorShown) {
-                Alert(
-                    title: Text("Error"),
-                    message: Text(errorMessage)
-                )
-            }
-            Button("Start playing") {
-                let selectedTracksCount = tracks.count { track in track.selected }
-                if selectedTracksCount == 0 {
-                    errorMessage = "Please select at least one track"
-                    errorShown = true
-                    return
-                }
-                
-                var notesListList = [[Song.Note]]()
-                var songDuration = 0.0 as Float
-                
-                if let selectedMidiFile {
-                    var bpm = 120.0
-                    
-                    // try to extract the "beats per minute" from the first track
-                    // as it seems to be normal to designate the first track to this
-                    for fileEvent in selectedMidiFile.tracks[0].events {
-                        if case .tempo(_, let event) = fileEvent {
-                            bpm = event.bpmEncoded
-                            break
-                        }
-                    }
-                    
-                    // The following few lines should calculate the accurate speed
-                    // for each track.
-                    // Currently, there is no better way to accomplish this:
-                    // https://github.com/orchetect/MIDIKit/discussions/243
-                    let secondsPerTick: Float = {switch(selectedMidiFile.timeBase) {
-                    case .musical(let ticksPerQuarterNote):
-                        return Float(60.0 / bpm / Double(ticksPerQuarterNote))
-                    case .timecode(let smpteFormat, let ticksPerFrame):
-                        // unhandled, will hopefully not occur
-                        return 1000
-                    }}()
-                    
-                    for selectedCandidate in tracks where selectedCandidate.selected {
-                        // since MIDI defines "pressed" and "released" as seperate events, 
-                        // and the sequence might very well be "pressed A" -> "pressed B" -> "released A"
-                        // we need to keep track which notes were opened at which time
-                        var openNotes = [String: Float]()
-                        var currentTick = UInt32(0)
-                        
-                        // final assembly of notes
-                        var notesList = [Song.Note]()
-                        
-                        for fileEvent in selectedCandidate.track.events {
-                            let event = fileEvent.event()
-
-                            // we do not have absolute timestamps, but only relative tick count
-                            // to the previous event.
-                            // Hence, we track the absolute progress here.
-                            currentTick += fileEvent.delta.ticksValue(using: .musical(ticksPerQuarterNote: 1000))
-                            
-                            // convert ticks to seconds
-                            let noteEnd = Float(currentTick) * secondsPerTick
-                            
-                            // bit wasteful to run this for every note, but mehr
-                            // happens only once anyway
-                            songDuration = max(songDuration, noteEnd)
-                            
-                            switch(event) {
-                            case let .noteOn(event):
-                                // sometimes, a key release is encoded as a press with zero velocity instead of a keyOff
-                                if event.velocity.unitIntervalValue == 0.0 {
-                                    if let start = openNotes[event.note.stringValue()] {
-                                        notesList.append(
-                                            convertEventToNode(note: event.note, start: start, end: noteEnd)
-                                        )
-                                    }
-                                    break;
-                                }
-                                
-                                // register the timestamp of this key being pressed
-                                openNotes[event.note.stringValue()] = Float(currentTick) * secondsPerTick;
-                            case let .noteOff(event):
-                                // calculate the length of this keypress
-                                if let start = openNotes[event.note.stringValue()] {
-                                    notesList.append(
-                                        convertEventToNode(note: event.note, start: start, end: noteEnd)
-                                    )
-                                }
-                                break
-                                
-                            default:
-                                break
-                            }
-                        }
-                        
-                        notesListList.append(notesList)
-                    }
-                    onProcess(Song(duration: songDuration, notes: notesListList))
-                }
-            }
-        }
+         VStack(spacing: 20) {
+             Button("Pick MIDI File") {
+                 showPicker = true
+             }
+             .sheet(isPresented: $showPicker) {
+                 DocumentPicker { urls in
+                     if let url = urls.first {
+                         handleURL(url: url)
+                     }
+                 }
+             }
+              
+             Text("Sample songs:")
+             
+             Button("Alle meine Entchen") {
+                 if let url = Bundle.main.url(forResource: "Alle_Meine_Entchen", withExtension: "mid", subdirectory: "MIDIs") {
+                     handleURL(url: url)
+                 }
+             }
+              
+             // This gets updated automatically when "tracks" is modified
+             // which happens then the user selects a new MIDI file
+             if !tracks.isEmpty {
+                 VStack {
+                     Text("Tracks in \(selectedFileName):")
+                         .font(.headline)
+                     
+                     // Here, we allow the user to select
+                     // which tracks he wants to be included in the player
+                     VStack {
+                         ForEach($tracks, id: \.index) { $trackCandidate in
+                             Toggle(trackCandidate.name, isOn: $trackCandidate.selected)
+                         }
+                     }
+                     // again, this gets shown automatically once "errorShown" changes
+                     .alert(isPresented: $errorShown) {
+                         Alert(
+                            title: Text("Error"),
+                            message: Text(errorMessage)
+                         )
+                     }
+                     Button("Start playing") {
+                         let selectedTracksCount = tracks.count { track in track.selected }
+                         if selectedTracksCount == 0 {
+                             errorMessage = "Please select at least one track"
+                             errorShown = true
+                             return
+                         }
+                         
+                         var notesListList = [[Song.Note]]()
+                         var songDuration = 0.0 as Float
+                         
+                         if let selectedMidiFile {
+                             // the default speed, if none given
+                             var bpm = 120.0
+                             
+                             // try to extract the "beats per minute" from the first track
+                             // as it seems to be normal to designate the first track to this
+                             for fileEvent in selectedMidiFile.tracks[0].events {
+                                 if case .tempo(_, let event) = fileEvent {
+                                     bpm = event.bpmEncoded
+                                     break
+                                 }
+                             }
+                             
+                             // The following few lines should calculate the accurate speed
+                             // for each track.
+                             // Currently, there is no better way to accomplish this:
+                             // https://github.com/orchetect/MIDIKit/discussions/243
+                             let secondsPerTick: Float = {switch(selectedMidiFile.timeBase) {
+                             case .musical(let ticksPerQuarterNote):
+                                 return Float(60.0 / bpm / Double(ticksPerQuarterNote))
+                             case .timecode(let smpteFormat, let ticksPerFrame):
+                                 // unhandled, will hopefully not occur
+                                 return 1000
+                             }}()
+                             
+                             for selectedCandidate in tracks where selectedCandidate.selected {
+                                 // since MIDI defines "pressed" and "released" as seperate events,
+                                 // and the sequence might very well be "pressed A" -> "pressed B" -> "released A"
+                                 // we need to keep track which notes were opened at which time
+                                 var openNotes = [String: Float]()
+                                 var currentTick = UInt32(0)
+                                 
+                                 // final assembly of notes
+                                 var notesList = [Song.Note]()
+                                 
+                                 for fileEvent in selectedCandidate.track.events {
+                                     let event = fileEvent.event()
+                                     
+                                     // we do not have absolute timestamps, but only relative tick count
+                                     // to the previous event.
+                                     // Hence, we track the absolute progress here.
+                                     currentTick += fileEvent.delta.ticksValue(using: .musical(ticksPerQuarterNote: 1000))
+                                     
+                                     // convert ticks to seconds
+                                     let noteEnd = Float(currentTick) * secondsPerTick
+                                     
+                                     // bit wasteful to run this for every note, but mehr
+                                     // happens only once anyway
+                                     songDuration = max(songDuration, noteEnd)
+                                     
+                                     switch(event) {
+                                     case let .noteOn(event):
+                                         // sometimes, a key release is encoded as a press with zero velocity instead of a keyOff
+                                         if event.velocity.unitIntervalValue == 0.0 {
+                                             if let start = openNotes[event.note.stringValue()] {
+                                                 notesList.append(
+                                                    convertEventToNode(note: event.note, start: start, end: noteEnd)
+                                                 )
+                                             }
+                                             break;
+                                         }
+                                         
+                                         // register the timestamp of this key being pressed
+                                         openNotes[event.note.stringValue()] = Float(currentTick) * secondsPerTick;
+                                     case let .noteOff(event):
+                                         // calculate the length of this keypress
+                                         if let start = openNotes[event.note.stringValue()] {
+                                             notesList.append(
+                                                convertEventToNode(note: event.note, start: start, end: noteEnd)
+                                             )
+                                         }
+                                         break
+                                         
+                                     default:
+                                         break
+                                     }
+                                 }
+                                 
+                                 notesListList.append(notesList)
+                             }
+                             onProcess(Song(duration: songDuration, notes: notesListList))
+                         }
+                     }
+                 }
+                 .padding(15)
+                 .background(Color.gray.opacity(0.45))
+                 .cornerRadius(40)
+                 .frame(width: 300)
+             }
+         }
     }
 }
 
