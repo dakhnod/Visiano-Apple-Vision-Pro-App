@@ -47,6 +47,31 @@ struct MenuView: View {
     }
     
     func handleURL(url: URL) {
+        
+        // Request access to security-scoped resource
+        var needsSecurityScopedAccess = false
+        var didStartAccessing = false
+
+        // Check if the file is outside the app sandbox (like from Files app)
+        // Bundle resources are typically in the app's directory
+        if !url.path.hasPrefix(Bundle.main.bundlePath) {
+            needsSecurityScopedAccess = true
+        }
+
+        if needsSecurityScopedAccess {
+            didStartAccessing = url.startAccessingSecurityScopedResource()
+            if !didStartAccessing {
+                print("Failed to access security-scoped resource")
+                return
+            }
+        }
+
+        defer {
+            if didStartAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        
         do {
             // get the file name
             selectedFileName = url.lastPathComponent
