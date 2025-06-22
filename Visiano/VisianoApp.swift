@@ -10,7 +10,8 @@ import SwiftUI
 @main
 struct VisianoApp: App {
     @State private var appModel = AppModel()
-    
+
+    // we need to import this function in order to open windows that handle a certain object class.
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
